@@ -43,7 +43,7 @@ xcuserdata/
 
 # Generic Stuff
 
-backup/ 
+backup/
 *.bak
 
 # PyDev stuff
