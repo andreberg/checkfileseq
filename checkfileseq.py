@@ -41,13 +41,13 @@ from operator import itemgetter
 __docformat__ = "epytext"
 
 DEBUG = 0
-TESTRUN = 0
-DOCTEST = 1
+TESTRUN = 1
+DOCTEST = 0
 
 #{ CLI Information
 PROGRAM_NAME = "checkfileseq"
 PROGRAM_VERSION = "v0.2"
-PROGRAM_BUILD_DATE = "2010-11-03"
+PROGRAM_BUILD_DATE = "2010-11-05"
 PROGRAM_VERSION_MESSAGE = '%%(prog)s %s (%s)' % (PROGRAM_VERSION, PROGRAM_BUILD_DATE)
 PROGRAM_SHORTDESC = '''checkfileseq -- scan directories for file sequences with missing files.'''
 PROGRAM_LICENSE = u'''%s
@@ -166,18 +166,34 @@ class FileSequenceChecker(object):
         >>> missing = fsc.processdir(somedir)
         >>> if len(missing) > 0:
         ...     for containingdir, missingfiles in missing.items():
-        ...         print u"In %s:" % containingdir
+        ...         print u"In '%s':" % containingdir
         ...         for missingfile in missingfiles:
         ...             print u"  Missing %s" % missingfile
-        In unittests/data/reverse_order:
+        In 'unittests/data/reverse_order':
           Missing 2 Write30.png
           Missing 4 Write30.png
           Missing 5 Write30.png
-        >>>
-        >>> # return a list of missing files for somedir
-        >>> # by indexing the fsc instance by pathname
+
+    A L{FileSequenceChecker} instance is key subscriptable.
+    If the instance's C{missing} attribute (a dict with the 
+    pathnames for dirs with missing files as keys) has an
+    entry for a given path it will return a list of file
+    names for all missing files inside that path. E.g.:
+        
         >>> print fsc[somedir]
         [u'2 Write30.png', u'4 Write30.png', u'5 Write30.png']
+        
+    You can also ask a L{FileSequenceChecker} instance for the 
+    total amount of missing files detected:
+    
+        >>> print fsc.totalfiles
+        3
+    
+    If you want to know how many dirs there were with missing 
+    files:
+    
+        >>> print fsc.totaldirs
+        1
     
         
     Implementation Notes
@@ -188,7 +204,7 @@ class FileSequenceChecker(object):
     then support syntax facilities such as slice notation. 
     
     This approach would have required to split the responsibilities of 
-    FileSequenceChecker into at least two classes:
+    L{FileSequenceChecker} into at least two classes:
      
     a FileSequence object that has information only about the validity 
     of the paths making up one particular file sequence and also stores 
@@ -323,7 +339,7 @@ class FileSequenceChecker(object):
         self.excludepat = None              # file names with paths matching this pattern will be excluded from being processed. overrides self.includepat. 
         self.includepat = None              # only file names with paths matching this pattern will be included in processing
         self.strictmatching = False         # if True uses re.match instead of re.search internally
-    def __repr__(self):
+    def __str__(self):
         if isinstance(self.start, int):
             start = "start = %i " % self.start
         else:
@@ -384,13 +400,28 @@ class FileSequenceChecker(object):
         return "%s%s%s%s%s%s%s%s%s%s%s%s%s%s" % \
                 (srepr, start, end, splitpat, template, fileexcludes, missing, \
                  lastfilebarename, nextseqnum, seqnumwidth, excludepat, includepat, recursive, fullpaths)
-    def __str__(self):
-        return repr(self)
+    def __repr__(self):
+        return "FileSequenceChecker(start=%s, end=%s, recursive=%s, fullpaths=%s)" % (str(self.start), str(self.end), str(self.recursive), str(self.fullpaths)) 
     def __unicode__(self):
         return u'%s' % str(self)
     def __getitem__(self, key):
         if self.missing and self.missing.has_key(key):
             return self.missing[key]
+        else:
+            return None
+    def __len__(self):
+        numfiles = 0
+        for files in self.missing.values():
+            numfiles += len(files)
+        return numfiles
+    def __getattr__(self, attr):
+        if attr == "totaldirs":
+            return len(self.missing.keys())
+        elif attr == "totalfiles":
+            numfiles = 0
+            for files in self.missing.values():
+                numfiles += len(files)
+            return numfiles
         else:
             return None
     def setfileexcludes(self, files):
@@ -915,7 +946,7 @@ def main(argv=None):  # IGNORE:C0111
         parser.add_argument("-i", "--include", dest="include", help="only include paths matching this regex pattern. Note: exclude is given preference over include. [default: %(default)s]", metavar="RE" )
         parser.add_argument("-e", "--exclude", dest="exclude", help="exclude paths matching this regex pattern. [default: %(default)s]", metavar="RE" )
         parser.add_argument('-V', '--version', action='version', version=PROGRAM_VERSION_MESSAGE)
-        parser.add_argument('-s', '--strict', dest="strict", help="use re.match instead of re.search to match and split filenames [default: %(default)s]", action="store_true")
+        parser.add_argument('-s', '--strict', dest="strict", help="use re.match instead of re.search to match and split filenames exactly [default: %(default)s]", action="store_true")
         parser.add_argument(dest="paths", help="paths to folder(s) with file sequence(s) [default: %(default)s]", metavar="path", nargs='+')
         
         parser.set_defaults(verbose=0, strict=False)
@@ -932,6 +963,7 @@ def main(argv=None):  # IGNORE:C0111
         inpat = args.include
         expat = args.exclude
         strict = args.strict
+        argv0 = sys.argv[0].split(u"/")[-1]
         
         if verbose > 0:
             print "Verbose mode on"
@@ -946,7 +978,11 @@ def main(argv=None):  # IGNORE:C0111
             raise CLIError(u"include and exclude pattern are equal! Nothing will be processed.")
         
         if splitpat and not template:
-            raise CLIError(u"custom split pattern specified but no custom template: did you forget -m <string>|--template=<string>?")
+            raise CLIError(u"custom split pattern specified but no custom template:\n"\
+                            "%sdid you forget -m <string>|--template=<string>?" % ((len(argv0)+5) * " "))
+        elif template and not splitpat:
+            raise CLIError(u"custom template specified but no custom split pattern:\n"\
+                            "%sdid you forget -p <regex>|--pattern=<regex>?" % ((len(argv0)+5) * " "))
         
         missing = {}
 
@@ -967,6 +1003,7 @@ def main(argv=None):  # IGNORE:C0111
                 print u"In %s:" % containingdir
                 for missingfile in missingfiles:
                     print u"  Missing %s" % missingfile
+            print "Total missing: %i file(s) in %i dir(s)" % (fsc.totalfiles, fsc.totaldirs)
     except Exception, e:
         if DEBUG or False:
             raise(e)
@@ -974,23 +1011,17 @@ def main(argv=None):  # IGNORE:C0111
         print >> sys.stderr, "\t for help use --help"
         return 2
 
-def _test():
-    ''' method for testing if all docstring exmaples are working '''
-    import doctest
-    doctest.testmod()
-        
 if __name__ == "__main__":
     if DEBUG:
         sys.argv.append("-v")
         sys.argv.append("-r")
-        #sys.argv.append("-h")
         sys.argv.append("unittests/data")
     if TESTRUN:
         #sys.argv.append("-h")
         #sys.argv.append("-v")
         sys.argv.append("-r")
         #sys.argv.append("--from=0")
-        #sys.argv.append("--to=11")
+        #sys.argv.append("--to=20")
         #sys.argv.append("-s")
         #sys.argv.append("--pattern='^(?!\d)(?P<filename>.+?)(?P<seqnum>\d+)$'")
         #sys.argv.append("--template='%(seqnum)s%(filename)s'")
@@ -998,7 +1029,8 @@ if __name__ == "__main__":
         sys.argv.append("unittests/data")
         #sys.argv.append("/Users/andre/test/sort/dir6")
     if DOCTEST:
-        _test()
+        import doctest
+        doctest.testmod()
     try:
         sys.exit(main())
     except KeyboardInterrupt:

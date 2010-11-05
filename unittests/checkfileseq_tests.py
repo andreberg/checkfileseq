@@ -19,6 +19,12 @@ def printmissing(missingdict):
         for _file in _filelist:
             print _file
 
+DIRS = {
+    'mixed': u'data/mixed_order',
+    'normal': u'data/normal_order',
+    'reverse': u'data/reverse_order'
+}
+
 class TestFileSequenceCheckerSplitPattern(unittest.TestCase):
     ''' test cases for the split pattern '''
     
@@ -83,11 +89,7 @@ class TestFileSequenceCheckerOutput(unittest.TestCase):
     
     def setUp(self):
         
-        self.dirs = {
-            'mixed': u'data/mixed_order',
-            'normal': u'data/normal_order',
-            'reverse': u'data/reverse_order'
-        }
+        self.dirs = DIRS
         
         self.known_output_for_mixed_order = \
         {u'data/mixed_order': [
@@ -395,6 +397,22 @@ class TestFileSequenceCheckerBogusCreation(unittest.TestCase):
         ''' test creation with invalid recursive values '''
         self.assertRaises(ValueError, FileSequenceChecker, recursive=None)
         self.assertRaises(ValueError, FileSequenceChecker, recursive=dict())
+
+class TestFileSequenceCheckerState(unittest.TestCase):
+    ''' test cases for testing internal state '''
+    
+    def setUp(self):
+        self.dirs = DIRS
+
+    def testVirtualAttributes(self):
+        ''' test attributes superimposed by getattr ''' 
+        fsc = FileSequenceChecker()
+        self.assertFalse(fsc, 'fsc should equal false because len(fsc) returns 0 at this point')
+        fsc.processdir(self.dirs['reverse'])
+        self.assertTrue(fsc, 'fsc should now equal True because len(fsc) will return != 0 at this point')
+        self.assertEquals(fsc.totalfiles, 9)
+        self.assertEquals(fsc.totaldirs, 1)
+        self.assertEquals(len(fsc[self.dirs['reverse']]), fsc.totalfiles)
         
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
