@@ -1,5 +1,6 @@
 #!/usr/local/bin/python2.7
 # encoding: utf-8
+# pylint: disable=C0302
 '''
 checkfileseq -- scan directories for file sequences with missing files
 
@@ -25,7 +26,7 @@ It defines one class L{FileSequenceChecker} which does all the processing.
              See the License for the specific language governing permissions and
              limitations under the License.
 
-@date:       2010-11-03
+@date:       2010-11-05
 '''
 
 import sys
@@ -40,8 +41,8 @@ from operator import itemgetter
 __docformat__ = "epytext"
 
 DEBUG = 0
-TESTRUN = 1
-DOCTEST = 0
+TESTRUN = 0
+DOCTEST = 1
 
 #{ CLI Information
 PROGRAM_NAME = "checkfileseq"
@@ -127,6 +128,31 @@ class FileSequenceChecker(object):
         3. L{self.processdir()} returns this dictionary, or an empty dictionary 
            if no there are no missing files, so that the caller can further do her
            own processing.
+           
+    Caveats
+    -------
+    
+    Even after careful testing and development, there are still some caveats left.
+    These are mostly coming from not being able to do everything automatically and 
+    then hide it away as implementation detail, especially when faced with inherent
+    ambiguities. 
+    
+    For example: certain file names are just not distuingishable enough to match one
+    default regex pattern over the other. This is because from a regex based matching 
+    perspective strings like v105-name and name-v105 are just too similar. 
+    Think about it: to match the first string you could say any lowercase letter 
+    followed by a number. 
+    
+    But can you be sure that you will always need to match just one lowercase letter? 
+    No, you cannot. Then you say match any lowercase letter any number of times followed 
+    by a number. If you now compare this with the second string you will see that this 
+    definition will match both. 
+    
+    Ambiguities like these are hard to resolve by automation. Any good API will defer 
+    these decitions to the user of the class and thus delegate the choice to the one 
+    who should know about specific needs. Thus in cases like this it is far better to
+    define the splitpattern yourself and the replacement template that goes along with
+    it so as to define a proper ordering for the replacements.
 
     Example Use
     -----------
@@ -135,14 +161,23 @@ class FileSequenceChecker(object):
     and only looks at files from a file sequence which have 
     sequence numbers within the range 0 through 10. 
     
-        >>> somedir = '/Users/andre/test'
-        >>> fsc = FileSequenceChecker(0, 10, True) 
+        >>> somedir = 'unittests/data/reverse_order'
+        >>> fsc = FileSequenceChecker(0, 10) 
         >>> missing = fsc.processdir(somedir)
         >>> if len(missing) > 0:
         ...     for containingdir, missingfiles in missing.items():
         ...         print u"In %s:" % containingdir
         ...         for missingfile in missingfiles:
         ...             print u"  Missing %s" % missingfile
+        In unittests/data/reverse_order:
+          Missing 2 Write30.png
+          Missing 4 Write30.png
+          Missing 5 Write30.png
+        >>>
+        >>> # return a list of missing files for somedir
+        >>> # by indexing the fsc instance by pathname
+        >>> print fsc[somedir]
+        [u'2 Write30.png', u'4 Write30.png', u'5 Write30.png']
     
         
     Implementation Notes
@@ -177,10 +212,8 @@ class FileSequenceChecker(object):
     most internal micro problems could be handled by utilizing standard 
     Python types.    
     '''
-    
-    # SPLITPAT is used to be consistent internally 
-    # but is overridable by the user – in main() – through a command line switch.
-    SPLITPAT = [
+
+    SPLITPAT = [ #: default split patterns
         {
             'pattern':
                 re.compile(ur'''^   # reverse order: start with digit(s)
@@ -216,7 +249,6 @@ class FileSequenceChecker(object):
                 'normal'
         }
     ]
-    ''' default split patterns '''
     
     if sys.platform == 'darwin':
         FILEEXCLUDES = [
@@ -249,51 +281,55 @@ class FileSequenceChecker(object):
         "processdir"
     ]
 
-    def __init__(self, start=None, end=None, recursive=False):
-        if start:
+    def __init__(self, start=None, end=None, recursive=False, fullpaths=False):
+        if isinstance(start, basestring):
             try:
-                start = int(start)
+                start = int(start.strip(), 10)
             except Exception:
                 raise ValueError("start must be of type int or convertible to type int")
-            if start < 0:
-                raise ValueError("Invalid number: start must be positive")
-        if end:
+        elif isinstance(start, int) and start < 0:
+            raise ValueError("Invalid number: start must be positive")
+        if isinstance(end, basestring):
             try:
-                end = int(end)
+                end = int(end.strip(), 10)
             except Exception:
                 raise ValueError("end must be of type int or convertible to type int")
-            if end < 0:
-                raise ValueError("Invalid number: end must be positive")
-        if start and end:
+        elif isinstance(end, int) and end < 0:
+            raise ValueError("Invalid number: end must be positive")
+        if isinstance(start, int) and isinstance(end, int):
             if start >= end:
                 raise ValueError("Invalid range: start is greater than or equal to end.")          
         if not isinstance(recursive, (bool, int)):
             raise ValueError("recursive must be of type bool/int")
-        self.start = start 
-        ''' only process files with sequence number values greater than this number '''
-        self.end = end 
-        ''' only process files with sequence number values less than or equal to this number '''
-        self.recursive = bool(recursive)
-        ''' process sub directories '''
-        # Private
-        self.lastfilebarename = u''     # the last file name, bare, that is without the sequence number part
-        self.nextseqnum = -1            # the next sequence number to expect
-        self.seqnumwidth = -1           # used for %.*s format specifiers in place of the star
-        self.splitpat = self.SPLITPAT   # the pattern(s) to be used to split a file name into name and sequence number
-        self.missing = {}               # will hold a list of all the missing file names, keyed by path to the directory containing them.
-        self.template = None            # a format string which must contain dict key-based replacement tokens for each named group of a custom splitpat. 
-        self.dircontents = {}           # will contain sorted sequence file lists keyed by filepath of the containing directory.
-        self.missingfiles = []          # holds a list of all missing files per one processed directory.
+        if not isinstance(fullpaths, (bool, int)):
+            raise ValueError("fullpaths must be of type bool/int")
+        
+        # public 
+        self.start = start                  #: only process files with sequence number values greater than this number
+        self.end = end                      #: only process files with sequence number values less than or equal to this number 
+        self.recursive = bool(recursive)    #: process sub directories
+        self.fullpaths = bool(fullpaths)    #: index missing file lists by absolute paths instead of relative paths
+        
+        # private
+        self.lastfilebarename = u''         # the last file name, bare, that is without the sequence number part
+        self.nextseqnum = -1                # the next sequence number to expect
+        self.seqnumwidth = -1               # used for %.*s format specifiers in place of the star
+        self.splitpat = self.SPLITPAT       # the pattern(s) to be used to split a file name into name and sequence number
+        self.missing = {}                   # will hold a list of all the missing file names, keyed by path to the directory containing them.
+        self.template = None                # a format string which must contain dict key-based replacement tokens for each named group of a custom splitpat. 
+        self.dircontents = {}               # will contain sorted sequence file lists keyed by filepath of the containing directory.
+        self.missingfiles = []              # holds a list of all missing files per one processed directory.
         self.fileexcludes = self.FILEEXCLUDES
-        self.excludepat = None          # file names with paths matching this pattern will be excluded from being processed. overrides self.includepat. 
-        self.includepat = None          # only file names with paths matching this pattern will be included in processing
+        self.excludepat = None              # file names with paths matching this pattern will be excluded from being processed. overrides self.includepat. 
+        self.includepat = None              # only file names with paths matching this pattern will be included in processing
+        self.strictmatching = False         # if True uses re.match instead of re.search internally
     def __repr__(self):
-        if self.start:
-            start = "start = %s " % str(self.start)
+        if isinstance(self.start, int):
+            start = "start = %i " % self.start
         else:
             start = ""
-        if self.end:
-            end = "end = %s " % str(self.end)
+        if isinstance(self.end, int):
+            end = "end = %i " % self.end
         else:
             end = ""
         if self.lastfilebarename != u'':
@@ -336,12 +372,27 @@ class FileSequenceChecker(object):
             template = self.template
         else:
             template = ""
+        if self.recursive:
+            recursive = "recursive = True "
+        else:
+            recursive = ""
+        if self.fullpaths:
+            fullpaths = "fullpaths = True "
+        else:
+            fullpaths = ""
         srepr = "%s " % super(FileSequenceChecker, self).__repr__()
-        return "%s%s%s%s%s%s%s%s%s%s%s%s" % (srepr, start, end, splitpat, template, fileexcludes, missing, lastfilebarename, nextseqnum, seqnumwidth, excludepat, includepat)
+        return "%s%s%s%s%s%s%s%s%s%s%s%s%s%s" % \
+                (srepr, start, end, splitpat, template, fileexcludes, missing, \
+                 lastfilebarename, nextseqnum, seqnumwidth, excludepat, includepat, recursive, fullpaths)
     def __str__(self):
         return repr(self)
     def __unicode__(self):
         return u'%s' % str(self)
+    def __getitem__(self, key):
+        if self.missing and self.missing.has_key(key):
+            return self.missing[key]
+        else:
+            return None
     def setfileexcludes(self, files):
         '''
         Set a list of filenames to exclude from processing right away. 
@@ -408,8 +459,8 @@ class FileSequenceChecker(object):
             @return: True if everything seems in order.
             @rtype: C{bool}
             ''' 
-            iter = re.finditer(ur'\?P<(.*?)>', p)
-            for i in iter:
+            fiter = re.finditer(ur'\?P<(.*?)>', p)
+            for i in fiter:
                 key = i.group(1)
                 if not re.search(ur"\b%s\b" % key, t):
                     raise ValueError("E: key %s not found in template (%s)" % (key, t))
@@ -529,7 +580,10 @@ class FileSequenceChecker(object):
                 order = 'reverse'
             else:
                 raise ValueError("order for split pattern is undefined!")
-            match = re.match(self.splitpat, filename)
+            if self.strictmatching:
+                match = re.match(self.splitpat, filename)
+            else:
+                match = re.match(self.splitpat, filename)
             if match:
                 if len(match.group('filename')) == 0:
                     if DEBUG: print u"%s: filename group is empty. Continuing..." % filename
@@ -554,9 +608,11 @@ class FileSequenceChecker(object):
             for d in self.splitpat:
                 _pattern = d['pattern']
                 _order = d['order']
-                #if DEBUG or TESTRUN: 
-                #    print "Trying %s pattern %d of %d" % (_order, i, splen)
-                match = re.match(_pattern, filename)
+                if DEBUG: print "Trying %s pattern %d of %d" % (_order, i, len(self.SPLITPAT))
+                if self.strictmatching:
+                    match = re.match(_pattern, filename)
+                else:
+                    match = re.match(_pattern, filename)
                 if match:
                     result = {
                         'filename': match.group('filename'), 
@@ -568,8 +624,8 @@ class FileSequenceChecker(object):
                         result['filename2'] = match.group('filename2')
                     if match.groupdict().has_key('filename3'):
                         print "groupdict().has_key('filename3')"
-                    #if DEBUG or TESTRUN: 
-                    #    print "Using pattern no. %d" % i
+                    if DEBUG: 
+                        print "Using pattern no. %d" % i
                     return result
                 i += 1
             return None
@@ -669,6 +725,10 @@ class FileSequenceChecker(object):
         @rtype: C{bool}
         '''
         filebarename = curfilenameparts['filename']
+        if curfilenameparts.has_key('filename2'):
+            filename2 = curfilenameparts['filename2']
+        else:
+            filename2 = u''
         seqnum = curfilenameparts['seqnum']
         fileext = curfilenameparts['fileext']
         order = curfilenameparts['order']
@@ -679,27 +739,27 @@ class FileSequenceChecker(object):
         try:
             # Try converting all the numerical strings that we absolutely need as numbers
             iseqnum = int(seqnum, 10)
-            if self.start: 
-                start = int(self.start, 10)
-            if self.end: 
-                end = int(self.end, 10)
-        except Exception, e: # IGNORE:W0703
+            if isinstance(self.start, int):
+                start = self.start
+            else:
+                start = 0
+            if isinstance(self.end, int):
+                end = self.end
+            else:
+                end = 0
+        except TypeError, e:
             if DEBUG or verbose > 0: print e
             self.reset()
             return True
-        if self.start and iseqnum < start:
-            if DEBUG or verbose > 0: print "iseqnum (%i) less than start (%i). Continuing..." % (iseqnum, start)
-            return True
-        if self.end and iseqnum >= end:
-            if DEBUG or verbose > 0: print "iseqnum (%i) greater than or equal to end (%i). Stopping iteration..." % (iseqnum, end)
-            # If self.end is reached for a file sequence reset state and return True 
-            # so that we may continue afresh with the next file sequence from the directory.
-            self.reset()
-            return True
+        except ValueError, e:
+            raise e
+        if start and iseqnum < start:
+            if DEBUG or verbose > 0: print "sequence number (%i) < start (%i). Continuing..." % (iseqnum, start)
+            return True      
         if order == 'reverse':
-            filename = u"%s%s" % (seqnum, filebarename)
+            filename = u"%s%s%s" % (filename2, seqnum, filebarename)
         else:
-            filename = u"%s%s" % (filebarename, seqnum) 
+            filename = u"%s%s%s" % (filebarename, seqnum, filename2) 
         fullfilename = u"%s%s" % (filename, fileext) # (filebarename, seqnum, fileext)
         filepath = os.path.join(dir, fullfilename) 
         if verbose > 0:
@@ -717,11 +777,10 @@ class FileSequenceChecker(object):
             # increment iseqnum into nextseqnum and continue interating.
             self.lastfilebarename = filebarename
             self.nextseqnum = iseqnum + 1
-            if self.end and self.nextseqnum > end:
-                if DEBUG or verbose > 0: print "self.nextseqnum (%i) greater than end (%i). Stopping iteration..." % (self.nextseqnum, end)
-                return False
-            else:
-                return True
+            if end and self.nextseqnum > end:
+                if DEBUG or verbose > 0: print "next sequence number (%i) would be > end (%i). Stopping iteration..." % (self.nextseqnum, end)
+                self.reset()
+            return True
         if self.lastfilebarename == filebarename:
             # Test if the lastfilebarename is not empty 
             # to see if we need to continue checking 
@@ -736,40 +795,29 @@ class FileSequenceChecker(object):
                     # and self.nextseqnum has the next number stored that the last round expected 
                     # to find next so self.nextseqnum, even though named with "next" in it will be 
                     # a lower number
-                    if self.end and i > end:
-                        return False
+                    if end and i > end:
+                        # When nextseqnum is greater than end we still need
+                        # to produce a missing file list up to end. That's why
+                        # we break inside the loop so that we can reset down
+                        # below when returning True to the enclosing iteration
+                        # loop that will then start processing the next file
+                        # sequence (if there is one).
+                        break
                     if order == 'reverse':
-                        if curfilenameparts.has_key('filename2'):
-                            partsdict = dict(
-                                filename2=curfilenameparts['filename2'], 
-                                seqnum=u"%0.*d" % (self.seqnumwidth, i), 
-                                filebarename=filebarename, 
-                                fileext=fileext
-                            )
-                        else:
-                            partsdict = dict(
-                                filename2=u"", 
-                                seqnum=u"%0.*d" % (self.seqnumwidth, i), 
-                                filebarename=filebarename, 
-                                fileext=fileext
-                            )
+                        partsdict = dict(
+                            filename2=filename2,
+                            seqnum=u"%0.*d" % (self.seqnumwidth, i), 
+                            filebarename=filebarename, 
+                            fileext=fileext
+                        )
                         missingfilename = u"%(filename2)s%(seqnum)s%(filebarename)s%(fileext)s" % partsdict
                     else:
-                        if curfilenameparts.has_key('filename2'):
-                            partsdict = dict(
-                                filename2=curfilenameparts['filename2'],
-                                seqnum=u"%0.*d" % (self.seqnumwidth, i), 
-                                filebarename=filebarename, 
-                                fileext=fileext
-                            )
-                            #missingfilename = u"%s%0.*d%s%s" % (filebarename, self.seqnumwidth, i, curfilenameparts['filename2'], fileext)
-                        else:
-                            partsdict = dict(
-                                filename2=u"", 
-                                seqnum=u"%0.*d" % (self.seqnumwidth, i), 
-                                filebarename=filebarename, 
-                                fileext=fileext
-                            )
+                        partsdict = dict(
+                            filename2=filename2,
+                            seqnum=u"%0.*d" % (self.seqnumwidth, i), 
+                            filebarename=filebarename, 
+                            fileext=fileext
+                        )
                         missingfilename = u"%(filebarename)s%(seqnum)s%(filename2)s%(fileext)s" % partsdict
                     if DEBUG or verbose > 0: print u"Missing %s" % missingfilename
                     if self.missing.has_key(dir):
@@ -777,12 +825,19 @@ class FileSequenceChecker(object):
                     else:
                         self.missing[dir] = []
                         self.missing[dir].append(missingfilename)
-                # Since we just handled a missing range, adjust the nextseqnum to start after 
-                # the end of the missing range
+                if end and iseqnum > end:
+                    if DEBUG or verbose > 0: print "sequence number (%i) in next existing file name > end (%i). Stopping iteration..." % (iseqnum, end)
+                    # If self.end is reached for a file sequence reset state and return True 
+                    # so that we may continue afresh with the next file sequence from the directory.
+                    self.reset()
+                    return True
+                # Since we just handled a missing range, adjust the nextseqnum 
+                # to start after the end of the missing range
                 self.nextseqnum = iseqnum + 1
             else:
                 # No missing sequence found. 
-                # Continue iterating over the current file sequence based on file bare name.
+                # Continue iterating over the current file sequence 
+                # based on file bare name.
                 self.nextseqnum += 1
             if nextfilebarename != filebarename:
                 # Next file(bare)name is not the same as the current,
@@ -792,12 +847,14 @@ class FileSequenceChecker(object):
         else:
             self.reset()
         return True
-    def processdir(self, inpath, verbose=0):
+    def processdir(self, inpath, strict=False, verbose=0):
         '''
         Main entry method: process the contents of a directory.
         
         @param inpath: the file path to a directory to process.
         @type inpath: C{unicode}
+        @param strict: use re.match instead of re.search for splitting the file name
+        @type strict: C{bool}
         @param verbose: print informational messages.
         @type verbose: C{int}
         @return: dictionary with missing files. Contains as keys
@@ -809,22 +866,29 @@ class FileSequenceChecker(object):
         @raise ValueError: if the directory at inpath doesn't 
                            exist.
         '''
+        if not strict:
+            self.strictmatching = False
         self.preparedircontents(inpath, verbose)
         if len(self.dircontents) > 0:
             for adir, files in self.dircontents.items():
+                if self.fullpaths:
+                    bdir = os.path.join(os.path.abspath(os.curdir), adir)
+                else:
+                    bdir = adir
                 if not os.path.exists(adir):
                     # check again to be sure the path did not turn invalid since the last time we checked
-                    raise ValueError(u"directory (%s) doesn't exist!" % adir)
+                    raise ValueError(u"directory (%s) doesn't exist!" % bdir)
                 def pairs(lst):
                     ''' Iterate through a list in pairs. '''
                     i = iter(lst)
+                    item = None
                     first = prev = i.next()
                     for item in i:
                         yield prev, item
                         prev = item
                     yield item, first
                 for curfile, nextfile in pairs(files):
-                    result = self.comparefile(adir, curfile, nextfile, verbose)
+                    result = self.comparefile(bdir, curfile, nextfile, verbose)
                     if result == False:
                         break
                     elif result == True:
@@ -836,13 +900,13 @@ class FileSequenceChecker(object):
         return self.missing
 
 
-def main(argv=None): # IGNORE:C0111
+def main(argv=None):  # IGNORE:C0111
     if argv is None:
         argv = sys.argv
     try:
         # Setup option parser
         parser = ArgumentParser(description=PROGRAM_LICENSE, formatter_class=RawDescriptionHelpFormatter)
-        parser.add_argument("-s", "--splitpat", dest="splitpat", help="regex pattern used for splitting a filename into a name part and a sequence number part. Must contain two named groups: 'filename' and 'seqnum'. Can optionally contain a 'filename2' group for cases where the filename is split in half by the sequence number. Note: You should only need to override the defaults for very special cases.", metavar="RE")
+        parser.add_argument("-p", "--pattern", dest="splitpat", help="regex pattern used for splitting a filename into a name part and a sequence number part. Must contain two named groups: 'filename' and 'seqnum'. Can optionally contain a 'filename2' group for cases where the filename is split in half by the sequence number. Note: You should only need to override the defaults for special cases.", metavar="RE")
         parser.add_argument("-m", "--template", dest="template", help="format string with dict-based replacement tokens (e.g. '%%s(<key_name>)s') that correspond to the named groups given in the custom splitpat. Important: this argument is mandatatory if a custom split pattern is specified.", metavar="STR")
         parser.add_argument("-r", "--recursive", dest="recurse", action="store_true", help="recurse into subfolders [default: %(default)s]")
         parser.add_argument("-v", "--verbose", dest="verbose", action="count", help="set verbosity level [default: %(default)s]")
@@ -851,9 +915,10 @@ def main(argv=None): # IGNORE:C0111
         parser.add_argument("-i", "--include", dest="include", help="only include paths matching this regex pattern. Note: exclude is given preference over include. [default: %(default)s]", metavar="RE" )
         parser.add_argument("-e", "--exclude", dest="exclude", help="exclude paths matching this regex pattern. [default: %(default)s]", metavar="RE" )
         parser.add_argument('-V', '--version', action='version', version=PROGRAM_VERSION_MESSAGE)
+        parser.add_argument('-s', '--strict', dest="strict", help="use re.match instead of re.search to match and split filenames [default: %(default)s]", action="store_true")
         parser.add_argument(dest="paths", help="paths to folder(s) with file sequence(s) [default: %(default)s]", metavar="path", nargs='+')
         
-        parser.set_defaults(verbose=0)
+        parser.set_defaults(verbose=0, strict=False)
         
         # Process options
         args = parser.parse_args()
@@ -866,6 +931,7 @@ def main(argv=None): # IGNORE:C0111
         recurse = args.recurse
         inpat = args.include
         expat = args.exclude
+        strict = args.strict
         
         if verbose > 0:
             print "Verbose mode on"
@@ -873,6 +939,8 @@ def main(argv=None): # IGNORE:C0111
                 print "Recursive mode on"
             else:
                 print "Recursive mode off"
+            if strict:
+                print "Using strict mode"
         
         if inpat and expat and inpat == expat:
             raise CLIError(u"include and exclude pattern are equal! Nothing will be processed.")
@@ -883,12 +951,15 @@ def main(argv=None): # IGNORE:C0111
         missing = {}
 
         for inpath in paths:
-            fsc = FileSequenceChecker(rangestart, rangeend, recurse)
+            if verbose > 0:
+                fsc = FileSequenceChecker(rangestart, rangeend, recurse, True)
+            else:
+                fsc = FileSequenceChecker(rangestart, rangeend, recurse)
             if splitpat and template:
                 fsc.setsplitpattern(unicode(splitpat), template)
             fsc.setincludepattern(inpat)
             fsc.setexcludepattern(expat)
-            missing = fsc.processdir(inpath, verbose)
+            missing = fsc.processdir(inpath, strict, verbose)
         raise KeyboardInterrupt
     except KeyboardInterrupt:
         if len(missing) > 0:
@@ -904,6 +975,7 @@ def main(argv=None): # IGNORE:C0111
         return 2
 
 def _test():
+    ''' method for testing if all docstring exmaples are working '''
     import doctest
     doctest.testmod()
         
@@ -911,23 +983,20 @@ if __name__ == "__main__":
     if DEBUG:
         sys.argv.append("-v")
         sys.argv.append("-r")
-        #sys.argv.append(u"/Users/andre/test/pics")
         #sys.argv.append("-h")
-        #sys.argv.append("/Volumes/Bibliothek/Footage/Compositing for Film and Video Bonus Material/HiDef_Video/Karate_Fight")
-        #sys.argv.append("/Volumes/Bibliothek/Footage/Compositing for Film and Video Bonus Material/Film_Scans/Duck")
         sys.argv.append("unittests/data")
-        #sys.argv.append("/Users/andre/test/sort")
     if TESTRUN:
         #sys.argv.append("-h")
         #sys.argv.append("-v")
         sys.argv.append("-r")
-        #sys.argv.append("--from=3")
-        #sys.argv.append("3")
-        #sys.argv.append("--to=15")
-        #sys.argv.append("7")
-        #sys.argv.append("--splitpat='^(?!\d)(?P<filename>.+?)(?P<seqnum>\d+)$'")
+        #sys.argv.append("--from=0")
+        #sys.argv.append("--to=11")
+        #sys.argv.append("-s")
+        #sys.argv.append("--pattern='^(?!\d)(?P<filename>.+?)(?P<seqnum>\d+)$'")
         #sys.argv.append("--template='%(seqnum)s%(filename)s'")
-        sys.argv.append("unittests/data/reverse_order")
+        #sys.argv.append("unittests/data/reverse_order")
+        sys.argv.append("unittests/data")
+        #sys.argv.append("/Users/andre/test/sort/dir6")
     if DOCTEST:
         _test()
     try:
