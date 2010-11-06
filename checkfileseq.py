@@ -26,13 +26,13 @@ It defines one class L{FileSequenceChecker} which does all the processing.
              See the License for the specific language governing permissions and
              limitations under the License.
 
-@date:       2010-11-05
+@date:       2010-11-06
 '''
 
 import sys
 import os
 import re
-import locale
+import time
 
 from argparse import ArgumentParser
 from argparse import RawDescriptionHelpFormatter
@@ -41,13 +41,13 @@ from operator import itemgetter
 __docformat__ = "epytext"
 
 DEBUG = 0
-TESTRUN = 1
-DOCTEST = 0
+TESTRUN = 0
+PROFILE = 1
 
 #{ CLI Information
 PROGRAM_NAME = "checkfileseq"
 PROGRAM_VERSION = "v0.2"
-PROGRAM_BUILD_DATE = "2010-11-05"
+PROGRAM_BUILD_DATE = "2010-11-06"
 PROGRAM_VERSION_MESSAGE = '%%(prog)s %s (%s)' % (PROGRAM_VERSION, PROGRAM_BUILD_DATE)
 PROGRAM_SHORTDESC = '''checkfileseq -- scan directories for file sequences with missing files.'''
 PROGRAM_LICENSE = u'''%s
@@ -64,9 +64,9 @@ class CLIError(Exception):
     ''' Generic CLI exception. Raised for logging different fatal errors. '''
     def __init__(self, msg):
         super(CLIError).__init__(type(self))
-        self.msg = u"E: %s" % msg
+        self.msg = "E: %s" % msg.decode('utf-8')
     def __str__(self):
-        return self.msg
+        return self.msg.encode('utf-8')
     def __unicode__(self):
         return self.msg
 
@@ -144,15 +144,21 @@ class FileSequenceChecker(object):
     followed by a number. 
     
     But can you be sure that you will always need to match just one lowercase letter? 
-    No, you cannot. Then you say match any lowercase letter any number of times followed 
-    by a number. If you now compare this with the second string you will see that this 
-    definition will match both. 
+    I would argue you can't. Then you say match any lowercase letter any number of 
+    times followed by a number. If you now compare this with the second string you 
+    will find that this definition now matches both strings. Of course you can mess
+    around with "rooting" to different sides of the string (^ vs. $) and also impose
+    a superficial ordering of less-likely to likely when applying different patterns,
+    but fundamentally there will always be a at least one case that is too ambiguous 
+    against another case.
     
     Ambiguities like these are hard to resolve by automation. Any good API will defer 
-    these decitions to the user of the class and thus delegate the choice to the one 
-    who should know about specific needs. Thus in cases like this it is far better to
-    define the splitpattern yourself and the replacement template that goes along with
-    it so as to define a proper ordering for the replacements.
+    these decisions to the user of the class and thus delegate the choice to the one 
+    who should know most about specific needs.
+    
+    In the case of the CLI that L{FileSequenceChecker} was originally made for, command 
+    line arguments give the end user the ability to define a pattern and a replacement 
+    template themselves, in order to cater to these special cases. 
 
     Example Use
     -----------
@@ -178,7 +184,7 @@ class FileSequenceChecker(object):
     If the instance's C{missing} attribute (a dict with the 
     pathnames for dirs with missing files as keys) has an
     entry for a given path it will return a list of file
-    names for all missing files inside that path. E.g.:
+    names for all missing files under that path. E.g.:
         
         >>> print fsc[somedir]
         [u'2 Write30.png', u'4 Write30.png', u'5 Write30.png']
@@ -194,6 +200,10 @@ class FileSequenceChecker(object):
     
         >>> print fsc.totaldirs
         1
+    
+    You can get the amount of time in fractional seconds that
+    L{processdir} took by calling C{fsc.lastexectime} and it
+    will return it as a float value.
     
         
     Implementation Notes
@@ -296,7 +306,7 @@ class FileSequenceChecker(object):
         "setsplitpattern", 
         "processdir"
     ]
-
+    
     def __init__(self, start=None, end=None, recursive=False, fullpaths=False):
         if isinstance(start, basestring):
             try:
@@ -339,6 +349,7 @@ class FileSequenceChecker(object):
         self.excludepat = None              # file names with paths matching this pattern will be excluded from being processed. overrides self.includepat. 
         self.includepat = None              # only file names with paths matching this pattern will be included in processing
         self.strictmatching = False         # if True uses re.match instead of re.search internally
+        self.lastexectime = -1              # how long did the last call of processdir take
     def __str__(self):
         if isinstance(self.start, int):
             start = "start = %i " % self.start
@@ -422,6 +433,11 @@ class FileSequenceChecker(object):
             for files in self.missing.values():
                 numfiles += len(files)
             return numfiles
+        elif attr == "totalprocessed":
+            numprocessed = 0
+            for files in self.dircontents.values():
+                numprocessed += len(files)
+            return numprocessed
         else:
             return None
     def setfileexcludes(self, files):
@@ -429,7 +445,7 @@ class FileSequenceChecker(object):
         Set a list of filenames to exclude from processing right away. 
         
         Often these are hidden or system files, like C{.DS_Store} 
-        on a Mac or C{thumbs.db} on a Windows PC for example.
+        on a Mac or C{Thumbs.db} on a Windows PC for example.
         
         @param files: a list of file names
         @type files: list
@@ -580,17 +596,17 @@ class FileSequenceChecker(object):
         
         _filename, _fileext = os.path.splitext(filename)
         #print "_filename = %s, _fileext = %s" % (_filename, _fileext)
-        
+
         if len(_filename) == 0:
             _filename = _fileext
-            _fileext = u""
+            _fileext = ""
         if not re.search(ur'\d+', _filename):
             # Take care of cases where numbers are found only in the fileext
             if not re.search(ur'\d+', _fileext):
-                raise ValueError("no number component present in either file name or file extension for (%s, %s)" % (_filename, _fileext))
+                return
             else:
-                _filename = u"%s%s" % (_filename, _fileext)
-                _fileext = u""
+                _filename = "%s%s" % (_filename, _fileext)
+                _fileext = ""
         
         filename = _filename
         fileext = _fileext
@@ -683,37 +699,45 @@ class FileSequenceChecker(object):
         @raise ValueError: if the C{inpath} doesn't exist or 
                            if C{inpath} is not a directory.
         '''
+        # Paths could contain chars > 128 so try to use system's
+        # default encoding if it is not ASCII. Otherwise use UTF-8.
+        defaultencoding = sys.getdefaultencoding()
+        if defaultencoding == 'ascii':
+            inpath = inpath.decode('utf-8')
+        else:
+            inpath = inpath.decode(defaultencoding)
         if not os.path.exists(inpath):
-            raise ValueError(u"inpath (%s) doesn't exist!" % inpath)
+            raise ValueError("path (%s) doesn't exist!" % inpath)
         if os.path.isdir(inpath):
             for root, _dirs, files in os.walk(inpath):
                 sortedfiles = []
                 for f in files:
-                    filepath = os.path.join(root, f)
+                    thefile = f
+                    filepath = os.path.join(root, thefile)
                     if not os.path.exists(filepath):
-                        raise ValueError(u"filepath (%s) doesn't exist!" % filepath)
-                    if f in self.fileexcludes:
+                        raise ValueError("path (%s) doesn't exist!" % filepath)
+                    if thefile in self.fileexcludes:
                         continue
                     if self.excludepat and re.search(self.excludepat, filepath):
-                        if verbose > 0: print u"Excluding %s" % filepath
+                        if verbose > 0: print "Excluding %s" % filepath
                         continue
                     if self.includepat and not re.search(self.includepat, filepath):
-                        if verbose > 0: print u"Not including %s" % filepath
+                        if verbose > 0: print "Not including %s" % filepath
                         continue
-                    nameparts = self.splitfilename(f)
+                    nameparts = self.splitfilename(thefile)
                     if nameparts:
                         sortedfiles.append(nameparts)
-                        if DEBUG: print u"Matched groups = %s" % str(nameparts)
+                        if DEBUG: print "Matched groups = %s" % nameparts
                     else:
-                        if DEBUG: print u"Result for splitting '%s' with given regex pattern(s) is None. Continuing..." % f
+                        if DEBUG: print "Result for splitting '%s' with given regex pattern(s) is None. Continuing..." % thefile
                         self.reset()
                         continue
                 def seqnum_compare(x, y):
                     ''' Compare int value of two sequence numbers. '''
                     return int(x, 10) - int(y, 10)
                 def filename_compare(x, y):
-                    ''' Compare two file names alphabetically and locale compliant. '''
-                    return cmp(locale.strxfrm(x), locale.strxfrm(y))
+                    ''' Compare two file names alphabetically. '''
+                    return cmp(x, y)
                 sortedfiles = sorted(sortedfiles, key=itemgetter('seqnum'), cmp=seqnum_compare) # sort by seqnum
                 sortedfiles = sorted(sortedfiles, key=itemgetter('filename'), cmp=filename_compare) # sort by filename
                 self.dircontents[root] = sortedfiles
@@ -755,11 +779,19 @@ class FileSequenceChecker(object):
             True if enclosing caller loop should continue.
         @rtype: C{bool}
         '''
+        if curfilenameparts is None:
+            if DEBUG or TESTRUN: 
+                print "Warning: curfilenameparts is None"
+            return True        
+        if nextfilenameparts is None:
+            if DEBUG or TESTRUN: 
+                print "Warning: nextfilenameparts is None"
+            return True
         filebarename = curfilenameparts['filename']
         if curfilenameparts.has_key('filename2'):
             filename2 = curfilenameparts['filename2']
         else:
-            filename2 = u''
+            filename2 = ''
         seqnum = curfilenameparts['seqnum']
         fileext = curfilenameparts['fileext']
         order = curfilenameparts['order']
@@ -788,10 +820,10 @@ class FileSequenceChecker(object):
             if DEBUG or verbose > 0: print "sequence number (%i) < start (%i). Continuing..." % (iseqnum, start)
             return True      
         if order == 'reverse':
-            filename = u"%s%s%s" % (filename2, seqnum, filebarename)
+            filename = "%s%s%s" % (filename2, seqnum, filebarename)
         else:
-            filename = u"%s%s%s" % (filebarename, seqnum, filename2) 
-        fullfilename = u"%s%s" % (filename, fileext) # (filebarename, seqnum, fileext)
+            filename = "%s%s%s" % (filebarename, seqnum, filename2) 
+        fullfilename = "%s%s" % (filename, fileext) # (filebarename, seqnum, fileext)
         filepath = os.path.join(dir, fullfilename) 
         if verbose > 0:
             print u"Processing '%s'" % filepath
@@ -804,8 +836,9 @@ class FileSequenceChecker(object):
             print "iseqnum = %i" % iseqnum
             print "order = %s" % order
         if self.lastfilebarename == u'':
-            # lastfilebarename is empty, which means we are at the beginning of a new file sequence.
-            # increment iseqnum into nextseqnum and continue interating.
+            # lastfilebarename is empty, which means we are at the beginning 
+            # of a new file sequence. Increment iseqnum into nextseqnum and 
+            # continue interating.
             self.lastfilebarename = filebarename
             self.nextseqnum = iseqnum + 1
             if end and self.nextseqnum > end:
@@ -897,6 +930,8 @@ class FileSequenceChecker(object):
         @raise ValueError: if the directory at inpath doesn't 
                            exist.
         '''
+        self.lastexectime = -1
+        start = float(time.time())
         if not strict:
             self.strictmatching = False
         self.preparedircontents(inpath, verbose)
@@ -912,12 +947,13 @@ class FileSequenceChecker(object):
                 def pairs(lst):
                     ''' Iterate through a list in pairs. '''
                     i = iter(lst)
-                    item = None
                     first = prev = i.next()
+                    item = None
                     for item in i:
                         yield prev, item
                         prev = item
-                    yield item, first
+                    if item:
+                        yield item, first
                 for curfile, nextfile in pairs(files):
                     result = self.comparefile(bdir, curfile, nextfile, verbose)
                     if result == False:
@@ -928,12 +964,16 @@ class FileSequenceChecker(object):
                         break
         else:
             if DEBUG or verbose > 0: print "Nothing missing."
+        elapsed = float(time.time() - start)
+        self.lastexectime = elapsed
         return self.missing
 
 
 def main(argv=None):  # IGNORE:C0111
     if argv is None:
         argv = sys.argv
+    else:
+        sys.argv.extend(argv)
     try:
         # Setup option parser
         parser = ArgumentParser(description=PROGRAM_LICENSE, formatter_class=RawDescriptionHelpFormatter)
@@ -978,10 +1018,10 @@ def main(argv=None):  # IGNORE:C0111
             raise CLIError(u"include and exclude pattern are equal! Nothing will be processed.")
         
         if splitpat and not template:
-            raise CLIError(u"custom split pattern specified but no custom template:\n"\
+            raise CLIError("custom split pattern specified but no custom template:\n"\
                             "%sdid you forget -m <string>|--template=<string>?" % ((len(argv0)+5) * " "))
         elif template and not splitpat:
-            raise CLIError(u"custom template specified but no custom split pattern:\n"\
+            raise CLIError("custom template specified but no custom split pattern:\n"\
                             "%sdid you forget -p <regex>|--pattern=<regex>?" % ((len(argv0)+5) * " "))
         
         missing = {}
@@ -998,18 +1038,41 @@ def main(argv=None):  # IGNORE:C0111
             missing = fsc.processdir(inpath, strict, verbose)
         raise KeyboardInterrupt
     except KeyboardInterrupt:
-        if len(missing) > 0:
-            for containingdir, missingfiles in missing.items():
-                print u"In %s:" % containingdir
-                for missingfile in missingfiles:
-                    print u"  Missing %s" % missingfile
-            print "Total missing: %i file(s) in %i dir(s)" % (fsc.totalfiles, fsc.totaldirs)
+        exectime = fsc.lastexectime
+        if exectime > 0:
+            if len(missing) > 0:
+                for containingdir, missingfiles in missing.items():
+                    print u"In %s:" % containingdir
+                    for missingfile in missingfiles:
+                        print u"  Missing %s" % missingfile
+                if fsc.totalfiles == 1:
+                    tfplural = ""
+                else:
+                    tfplural = "s"
+                if fsc.totaldirs == 1:
+                    tdplural = ""
+                else:
+                    tdplural = "s"
+                print "\n-------------"
+                print "Total missing: %i file%s in %i dir%s" % (fsc.totalfiles, tfplural, fsc.totaldirs, tdplural)
+            elif verbose > 0:
+                print "\n---------------"
+                print "Nothing missing"
+            else:
+                print "Nothing missing"
+            if fsc.totalprocessed == 1:
+                plurality = ""
+            else:
+                plurality = "s"
+            print ""
+            print "Processed %i file%s in %0.3f s" % (fsc.totalprocessed, plurality, exectime)
     except Exception, e:
         if DEBUG or False:
             raise(e)
-        print >> sys.stderr, sys.argv[0].split(u"/")[-1] + u": " + unicode(e).decode('unicode_escape')
+        print >> sys.stderr, sys.argv[0].split(u"/")[-1] + u": " + unicode(e)
         print >> sys.stderr, "\t for help use --help"
         return 2
+
 
 if __name__ == "__main__":
     if DEBUG:
@@ -1017,20 +1080,33 @@ if __name__ == "__main__":
         sys.argv.append("-r")
         sys.argv.append("unittests/data")
     if TESTRUN:
+        import doctest
+        doctest.testmod()
+        reload(sys)
+        sys.setdefaultencoding('ascii') # IGNORE:E1101 #@UndefinedVariable
         #sys.argv.append("-h")
         #sys.argv.append("-v")
         sys.argv.append("-r")
         #sys.argv.append("--from=0")
-        #sys.argv.append("--to=20")
+        #sys.argv.append("--to=10")
         #sys.argv.append("-s")
         #sys.argv.append("--pattern='^(?!\d)(?P<filename>.+?)(?P<seqnum>\d+)$'")
         #sys.argv.append("--template='%(seqnum)s%(filename)s'")
         #sys.argv.append("unittests/data/reverse_order")
         sys.argv.append("unittests/data")
         #sys.argv.append("/Users/andre/test/sort/dir6")
-    if DOCTEST:
-        import doctest
-        doctest.testmod()
+        #sys.argv.append("/Users/andre/nreal")
+    if PROFILE:
+        profile_filename = 'checkfileseq_profile.txt'
+        import cProfile
+        import pstats
+        cProfile.run('sys.exit(main(["-r", "/Users/andre/nreal"]))', profile_filename)
+        statsfile = open("profile_stats.txt", "wb")
+        p = pstats.Stats(profile_filename, stream=statsfile)
+        stats = p.strip_dirs().sort_stats('cumulative')
+        print >> statsfile, stats.print_stats()
+        statsfile.close()
+        sys.exit(0)
     try:
         sys.exit(main())
     except KeyboardInterrupt:
