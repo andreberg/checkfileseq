@@ -6,8 +6,12 @@ Created on 01.11.2010
 @author: andre
 '''
 import unittest
-#from checkfileseq import *
+import sys
+
 from checkfileseq import FileSequenceChecker
+
+reload(sys)
+sys.setdefaultencoding('ascii') # IGNORE:E1101 @UndefinedVariable
 
 def printmissing(missingdict):
     ''' 
@@ -22,8 +26,16 @@ def printmissing(missingdict):
 DIRS = {
     'mixed': u'data/mixed_order',
     'normal': u'data/normal_order',
-    'reverse': u'data/reverse_order'
+    'reverse': u'data/reverse_order',
+    'nothing': u'data/nothing_missing'
 }
+
+class TestFileSequenceCheckerGeneral(unittest.TestCase):
+    ''' test cases for general environment and system state '''
+    
+    def testDefaultEncodingIsASCII(self):
+        ''' test system default encoding '''
+        self.assertEquals(sys.getdefaultencoding(), 'ascii', 'to properly test unicode handling in filepaths we need default encoding to be ascii')
 
 class TestFileSequenceCheckerSplitPattern(unittest.TestCase):
     ''' test cases for the split pattern '''
@@ -297,6 +309,8 @@ class TestFileSequenceCheckerOutput(unittest.TestCase):
             u"4 Write30.png",
             u"5 Write30.png"
         ]}
+        
+        self.known_output_for_nothing_missing = {}
 
     
     def testKnownOutputForMixedOrder(self):
@@ -346,6 +360,14 @@ class TestFileSequenceCheckerOutput(unittest.TestCase):
         #printmissing(output)
         #printmissing(self.known_output_for_reverse_order)
         self.assertEquals(output, self.known_restricted_output_for_reverse_order)
+        
+    def testKnownOutputForNothingMissing(self):
+        ''' test known output for dir with no missing files '''
+        fsc = FileSequenceChecker()
+        output = fsc.processdir(self.dirs['nothing'])
+        #printmissing(output)
+        #printmissing(self.known_output_for_nothing_missing)
+        self.assertEquals(output, self.known_output_for_nothing_missing)
         
     def testGetitem(self):
         ''' test __getitem__ based notation for the missing results '''
