@@ -41,8 +41,8 @@ from operator import itemgetter
 __docformat__ = "epytext"
 
 DEBUG = 0
-TESTRUN = 0
-PROFILE = 1
+TESTRUN = 1
+PROFILE = 0
 
 #{ CLI Information
 PROGRAM_NAME = "checkfileseq"
@@ -139,26 +139,26 @@ class FileSequenceChecker(object):
     
     For example: certain file names are just not distuingishable enough to match one
     default regex pattern over the other. This is because from a regex based matching 
-    perspective strings like v105-name and name-v105 are just too similar. 
-    Think about it: to match the first string you could say any lowercase letter 
+    perspective strings like C{v105-name} and C{name-v105} are just too similar. 
+    Think about it: to match the first string you could say: match any lowercase letter 
     followed by a number. 
     
     But can you be sure that you will always need to match just one lowercase letter? 
-    I would argue you can't. Then you say match any lowercase letter any number of 
+    I would argue you can't. Then you say: match any lowercase letter any number of 
     times followed by a number. If you now compare this with the second string you 
-    will find that this definition now matches both strings. Of course you can mess
-    around with "rooting" to different sides of the string (^ vs. $) and also impose
-    a superficial ordering of less-likely to likely when applying different patterns,
-    but fundamentally there will always be a at least one case that is too ambiguous 
-    against another case.
+    will find that this definition will match both strings. Of course you can mess
+    around with "rooting" to different sides of the string (C{^} vs. C{$}) and also 
+    impose a superficial ordering of less-likely to likely when applying different 
+    patterns, but fundamentally there will always be a at least one case that is 
+    too ambiguous compared to another case.
     
     Ambiguities like these are hard to resolve by automation. Any good API will defer 
     these decisions to the user of the class and thus delegate the choice to the one 
     who should know most about specific needs.
     
-    In the case of the CLI that L{FileSequenceChecker} was originally made for, command 
-    line arguments give the end user the ability to define a pattern and a replacement 
-    template themselves, in order to cater to these special cases. 
+    In the case of the CLI that L{FileSequenceChecker} was originally made for, 
+    command line arguments give the end user the ability to define a pattern and 
+    a replacement template themselves, so as to cater to these special cases. 
 
     Example Use
     -----------
@@ -202,36 +202,40 @@ class FileSequenceChecker(object):
         1
     
     You can get the amount of time in fractional seconds that
-    L{processdir} took by calling C{fsc.lastexectime} and it
-    will return it as a float value.
+    L{self.processdir()} took by calling C{fsc.lastexectime} and 
+    it will return it as a C{float} value.
     
         
     Implementation Notes
     --------------------
     
-    As this class has I{Sequence} in its name a strong case was made in the 
-    beginning for making it into an iterable object, which for example would 
-    then support syntax facilities such as slice notation. 
+    As this class has I{Sequence} in its name, a strong case was made 
+    initially when designing the class, for making it into an iterable 
+    object, which, for example, would then support Pythonic syntax 
+    facilities such as slice notation among others. In other words:
+    to treat the L{FileSequenceChecker} as a sequence-like proxy object 
+    that would delegate all the functionality that's required for the
+    problem domain of the CLI implementation to standard Python sequence
+    objects like lists, tuples etc.  
     
-    This approach would have required to split the responsibilities of 
-    L{FileSequenceChecker} into at least two classes:
+    However, this approach would have required to split the responsibilities 
+    of L{FileSequenceChecker} into at least two classes:
      
-    a FileSequence object that has information only about the validity 
+    a C{FileSequence} object that has information only about the validity 
     of the paths making up one particular file sequence and also stores 
     cross-referenced information about the parts that make up each file 
-    name in that sequence, and a DirectoryParser object that builds a 
+    name in that sequence, and a C{DirectoryParser} object that builds a 
     list of file sequence candidates for processing later on.
     
     For each encountered file sequence from this previously created, and 
-    thus pre-filtered directory list one FileSequence object is created and 
-    iterated upon. This iterating cycle would then perform calulation of all 
-    missing file names in the same way as currently done in the comparing 
-    function.
+    thus pre-filtered directory list, one C{FileSequence} object is created 
+    and iterated upon. This iterating cycle would then perform calulation 
+    of all missing file names in the same way as done currently in the 
+    comparing function.
     
     While this approach has some elegance to it, from a I{GTD} perspective 
-    of creating a command line tool for a very specific purpose, the 
-    I{'divide et impera'} approach was abandoned in favour of a I{one-class-fits-all} 
-    design. 
+    of creating a command line tool for a specific purpose, the I{'divide et impera'} 
+    approach was abandoned in favour of a I{one-class-fits-all} design. 
     
     This was also helped by the fact that it became apparent pretty early 
     that there would not be much need for things like slice notation and 
@@ -291,6 +295,7 @@ class FileSequenceChecker(object):
     elif sys.platform in ['win32', 'cygwin']:
         FILEEXCLUDES = [
             "thumbs.db",
+            "Thumbs.db",
             "desktop.ini"
         ]
     else:
@@ -299,7 +304,6 @@ class FileSequenceChecker(object):
         FILEEXCLUDES = []
         
     __all__ = [
-        "SPLITPAT", "FILEEXCLUDES", 
         "setfileexcludes", 
         "setincludepattern", 
         "setexcludepattern", 
@@ -308,27 +312,28 @@ class FileSequenceChecker(object):
     ]
     
     def __init__(self, start=None, end=None, recursive=False, fullpaths=False):
+        
         if isinstance(start, basestring):
             try:
                 start = int(start.strip(), 10)
             except Exception:
-                raise ValueError("start must be of type int or convertible to type int")
+                raise ValueError("E: start must be of type int or convertible to type int")
         elif isinstance(start, int) and start < 0:
-            raise ValueError("Invalid number: start must be positive")
+            raise ValueError("E: invalid number: start must be positive")
         if isinstance(end, basestring):
             try:
                 end = int(end.strip(), 10)
             except Exception:
-                raise ValueError("end must be of type int or convertible to type int")
+                raise ValueError("E: end must be of type int or convertible to type int")
         elif isinstance(end, int) and end < 0:
-            raise ValueError("Invalid number: end must be positive")
+            raise ValueError("E: invalid number: end must be positive")
         if isinstance(start, int) and isinstance(end, int):
             if start >= end:
-                raise ValueError("Invalid range: start is greater than or equal to end.")          
+                raise ValueError("E: invalid range: start is greater than or equal to end")          
         if not isinstance(recursive, (bool, int)):
-            raise ValueError("recursive must be of type bool/int")
+            raise ValueError("E: 'recursive' must be of type bool/int")
         if not isinstance(fullpaths, (bool, int)):
-            raise ValueError("fullpaths must be of type bool/int")
+            raise ValueError("E: 'fullpaths' must be of type bool/int")
         
         # public 
         self.start = start                  #: only process files with sequence number values greater than this number
@@ -412,7 +417,8 @@ class FileSequenceChecker(object):
                 (srepr, start, end, splitpat, template, fileexcludes, missing, \
                  lastfilebarename, nextseqnum, seqnumwidth, excludepat, includepat, recursive, fullpaths)
     def __repr__(self):
-        return "FileSequenceChecker(start=%s, end=%s, recursive=%s, fullpaths=%s)" % (str(self.start), str(self.end), str(self.recursive), str(self.fullpaths)) 
+        return "FileSequenceChecker(start=%s, end=%s, recursive=%s, fullpaths=%s)" % \
+                (str(self.start), str(self.end), str(self.recursive), str(self.fullpaths)) 
     def __unicode__(self):
         return u'%s' % str(self)
     def __getitem__(self, key):
@@ -440,17 +446,18 @@ class FileSequenceChecker(object):
             return numprocessed
         else:
             return None
-    def setfileexcludes(self, files):
+    def setfileexcludes(self, filenames):
         '''
-        Set a list of filenames to exclude from processing right away. 
+        Set a list of file names to be excluded from being 
+        evaluated.
         
         Often these are hidden or system files, like C{.DS_Store} 
         on a Mac or C{Thumbs.db} on a Windows PC for example.
         
-        @param files: a list of file names
-        @type files: list
+        @param filenames: a list of file names
+        @type filenames: list
         '''
-        self.fileexcludes = files
+        self.fileexcludes = filenames
     def setexcludepattern(self, pattern):
         '''
         Paths matching this pattern will be excluded from being evaluated,
@@ -466,7 +473,7 @@ class FileSequenceChecker(object):
         self.includepat = pattern
     def setsplitpattern(self, pattern, template=None):
         '''
-        Set the regex pattern that will split the filename into name and 
+        Set the regex pattern that will split the file name into name and 
         sequence number parts. 
         
         Must contain two named groups: C{filename} and C{seqnum} where
@@ -475,13 +482,12 @@ class FileSequenceChecker(object):
         named groupd C{filename2} for cases where the sequence number
         splits the filename in half.
         
-        If a custom pattern is supplied as unicode raw string, template
+        If a custom pattern is supplied as raw unicode string, template
         B{cannot} be C{None}.
         
-        Attempts to sanitize the pattern, for example by doing things
-        like chopping off single and double quotation marks (if present) 
-        at the beginning and end of the pattern string.
-        
+        @note: will attempt to sanitize the pattern, for example by doing 
+        things like chopping off single and double quotation marks 
+        (if present) at the beginning and end of the pattern string.        
         @param pattern: a list of unicode regex patterns or a unicode 
                         string to be used as the regex pattern.
         @type pattern: C{list of unicode} or C{unicode} 
@@ -491,26 +497,27 @@ class FileSequenceChecker(object):
                          if pattern is of type C{unicode}!
         @type template: C{unicode}
         @raise ValueError: if the regex pattern doesn't contain one 
-               named C{filename} and one named C{seqnum} group.
+                           named regex group called C{filename} and 
+                           one named group called C{seqnum}.
         '''
-        def verifytemplate(p, t):
+        def verifytemplate(pt, tp):
             ''' 
             Utility function for verifying that the format template contains
             replacement tokens for each named group of the pattern.
             
-            @param p: the regex pattern
-            @type p: C{regex}
+            @param pt: the regex pattern
+            @type pt: C{regex}
             @param t: the template format string
             @type t: C{string}
             @raise ValueError: if a key is missing for a named group.
             @return: True if everything seems in order.
             @rtype: C{bool}
             ''' 
-            fiter = re.finditer(ur'\?P<(.*?)>', p)
+            fiter = re.finditer(ur'\?P<(.*?)>', pt)
             for i in fiter:
                 key = i.group(1)
-                if not re.search(ur"\b%s\b" % key, t):
-                    raise ValueError("E: key %s not found in template (%s)" % (key, t))
+                if not re.search(ur"\b%s\b" % key, tp):
+                    raise ValueError("E: key %s not found in template (%s)" % (key, tp))
             return True
         def sanitizepattern(pat):
             '''
@@ -528,7 +535,7 @@ class FileSequenceChecker(object):
             '''
             # chop off quotation marks if present
             if len(pat) == 0:
-                raise ValueError("pattern string is empty")
+                raise ValueError("E: pattern string is empty")
             firstchar = pat[0]
             if firstchar == '"' or firstchar == "'":
                 pat = pat[1:]
@@ -536,12 +543,12 @@ class FileSequenceChecker(object):
             if lastchar == '"' or lastchar == "'":
                 pat = pat[:-1]
             if not re.search(ur'\?P<filename>', pat):
-                if DEBUG: print u"Warning: pattern doesn't include a 'filename' group!"
+                if DEBUG: print "Warning: pattern doesn't include a 'filename' group!"
                 raise ValueError("pattern doesn't include a 'filename' group!")
             if not re.search(ur'\?P<seqnum>', pat):
-                if DEBUG: print u"Warning: pattern doesn't include a 'seqnum' group!"
-                raise ValueError("pattern doesn't include a 'seqnum' group!")
-            return u'%s' % pat
+                if DEBUG: print "Warning: pattern doesn't include a 'seqnum' group!"
+                raise ValueError("E: pattern doesn't include a 'seqnum' group!")
+            return '%s' % pat
         # reset splitpat to default if arg is None
         if pattern is None:
             self.splitpat = self.SPLITPAT
@@ -567,7 +574,7 @@ class FileSequenceChecker(object):
         Using self.splitpat split the filename into filename and 
         seqnum part.
         
-        self.splitpat can be of type list or of type unicode raw string.
+        C{self.splitpat} can be of type list or of type unicode raw string.
         The list form should contain unicode raw string patterns in reverse 
         order of likely occurrence. The direct unicode raw string pattern 
         form is there to facilitate to ability for the command line user 
@@ -680,7 +687,7 @@ class FileSequenceChecker(object):
             raise TypeError("split pattern is not of type unicode or list.")
     def preparedircontents(self, inpath, verbose=0):
         '''
-        Prepare self.dircontents to contain directory contents in 
+        Prepare C{self.dircontents} to contain directory contents in 
         lists, sorted naturally-like: first by sequence number then
         alphabetically by file name.
         
@@ -1075,10 +1082,12 @@ def main(argv=None):  # IGNORE:C0111
 
 
 if __name__ == "__main__":
+    if DEBUG or TESTRUN or PROFILE:
+        datadir = "unittests/data"
     if DEBUG:
         sys.argv.append("-v")
         sys.argv.append("-r")
-        sys.argv.append("unittests/data")
+        sys.argv.append(datadir)
     if TESTRUN:
         import doctest
         doctest.testmod()
@@ -1093,14 +1102,14 @@ if __name__ == "__main__":
         #sys.argv.append("--pattern='^(?!\d)(?P<filename>.+?)(?P<seqnum>\d+)$'")
         #sys.argv.append("--template='%(seqnum)s%(filename)s'")
         #sys.argv.append("unittests/data/reverse_order")
-        sys.argv.append("unittests/data")
+        sys.argv.append(datadir)
         #sys.argv.append("/Users/andre/test/sort/dir6")
         #sys.argv.append("/Users/andre/nreal")
     if PROFILE:
         profile_filename = 'checkfileseq_profile.txt'
         import cProfile
         import pstats
-        cProfile.run('sys.exit(main(["-r", "/Users/andre/nreal"]))', profile_filename)
+        cProfile.run('sys.exit(main(["-r", datadir]))', profile_filename)
         statsfile = open("profile_stats.txt", "wb")
         p = pstats.Stats(profile_filename, stream=statsfile)
         stats = p.strip_dirs().sort_stats('cumulative')
