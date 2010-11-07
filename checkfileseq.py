@@ -342,7 +342,7 @@ class FileSequenceChecker(object):
         self.fullpaths = bool(fullpaths)    #: index missing file lists by absolute paths instead of relative paths
         
         # private
-        self.lastfilebarename = u''         # the last file name, bare, that is without the sequence number part
+        self.lastfilebarename = ''         # the last file name, bare, that is without the sequence number part
         self.nextseqnum = -1                # the next sequence number to expect
         self.seqnumwidth = -1               # used for %.*s format specifiers in place of the star
         self.splitpat = self.SPLITPAT       # the pattern(s) to be used to split a file name into name and sequence number
@@ -543,10 +543,12 @@ class FileSequenceChecker(object):
             if lastchar == '"' or lastchar == "'":
                 pat = pat[:-1]
             if not re.search(ur'\?P<filename>', pat):
-                if DEBUG: print "Warning: pattern doesn't include a 'filename' group!"
-                raise ValueError("pattern doesn't include a 'filename' group!")
+                if DEBUG:
+                    print "Warning: pattern doesn't include a 'filename' group!"
+                raise ValueError("E: pattern doesn't include a 'filename' group!")
             if not re.search(ur'\?P<seqnum>', pat):
-                if DEBUG: print "Warning: pattern doesn't include a 'seqnum' group!"
+                if DEBUG:
+                    print "Warning: pattern doesn't include a 'seqnum' group!"
                 raise ValueError("E: pattern doesn't include a 'seqnum' group!")
             return '%s' % pat
         # reset splitpat to default if arg is None
@@ -633,16 +635,18 @@ class FileSequenceChecker(object):
             elif d[0] == 'seqnum' and d[1] == 'filename':
                 order = 'reverse'
             else:
-                raise ValueError("order for split pattern is undefined!")
+                raise ValueError("E: order for split pattern is undefined!")
             if self.strictmatching:
                 match = re.match(self.splitpat, filename)
             else:
                 match = re.match(self.splitpat, filename)
             if match:
                 if len(match.group('filename')) == 0:
-                    if DEBUG: print u"%s: filename group is empty. Continuing..." % filename
+                    if DEBUG: 
+                        print "%s: filename group is empty. Continuing..." % filename
                 elif len(match.group('seqnum')) == 0:
-                    if DEBUG: print u"%s: seqnum group is empty. Continuing..." % filename
+                    if DEBUG: 
+                        print "%s: seqnum group is empty. Continuing..." % filename
                 else:
                     result = {
                         'filename': match.group('filename'), 
@@ -650,19 +654,18 @@ class FileSequenceChecker(object):
                         'fileext': fileext, 
                         'order': order
                     }
-                    if match.groupdict().has_key('filename2'):
+                    if 'filename2' in match.groupdict():
                         result['filename2'] = match.group('filename2')
-                    if match.groupdict().has_key('filename3'):
-                        print "groupdict().has_key('filename3')"
                     return result
             return None
         elif isinstance(self.splitpat, list):
             i = 1
-            #splen = len(self.splitpat)
+            splen = len(self.splitpat)
             for d in self.splitpat:
                 _pattern = d['pattern']
                 _order = d['order']
-                if DEBUG: print "Trying %s pattern %d of %d" % (_order, i, len(self.SPLITPAT))
+                if DEBUG: 
+                    print "Trying %s pattern %d of %d" % (_order, i, splen)
                 if self.strictmatching:
                     match = re.match(_pattern, filename)
                 else:
@@ -709,12 +712,13 @@ class FileSequenceChecker(object):
         # Paths could contain chars > 128 so try to use system's
         # default encoding if it is not ASCII. Otherwise use UTF-8.
         defaultencoding = sys.getdefaultencoding()
-        if defaultencoding == 'ascii':
-            inpath = inpath.decode('utf-8')
-        else:
-            inpath = inpath.decode(defaultencoding)
+        if not isinstance(inpath, unicode):
+            if defaultencoding == 'ascii':
+                inpath = inpath.decode('utf-8')
+            else:
+                inpath = unicode(inpath, defaultencoding)
         if not os.path.exists(inpath):
-            raise ValueError("path (%s) doesn't exist!" % inpath)
+            raise ValueError("E: path (%s) doesn't exist!" % inpath)
         if os.path.isdir(inpath):
             for root, _dirs, files in os.walk(inpath):
                 sortedfiles = []
@@ -722,7 +726,7 @@ class FileSequenceChecker(object):
                     thefile = f
                     filepath = os.path.join(root, thefile)
                     if not os.path.exists(filepath):
-                        raise ValueError("path (%s) doesn't exist!" % filepath)
+                        raise ValueError("E: path (%s) doesn't exist!" % filepath)
                     if thefile in self.fileexcludes:
                         continue
                     if self.excludepat and re.search(self.excludepat, filepath):
@@ -734,9 +738,12 @@ class FileSequenceChecker(object):
                     nameparts = self.splitfilename(thefile)
                     if nameparts:
                         sortedfiles.append(nameparts)
-                        if DEBUG: print "Matched groups = %s" % nameparts
+                        if DEBUG:
+                            print "Matched groups = %s" % nameparts
                     else:
-                        if DEBUG: print "Result for splitting '%s' with given regex pattern(s) is None. Continuing..." % thefile
+                        if DEBUG:
+                            print("Result for splitting '%s' with given regex pattern(s) is None. Continuing..." % 
+                                  thefile)
                         self.reset()
                         continue
                 def seqnum_compare(x, y):
@@ -751,19 +758,19 @@ class FileSequenceChecker(object):
                 if not self.recursive:
                     return
         else:
-            raise ValueError(u"inpath (%s) is not a directory!" % inpath)
+            raise ValueError("E: inpath (%s) is not a directory!" % inpath)
     def comparefile(self, dir, curfilenameparts, nextfilenameparts, verbose=0): # IGNORE:W0622
         '''
         Compare one file with the next file in the sequence.
         
         This method is called during processing of the loop which 
-        iterates over the file sequences.
+        iterates over all file sequences.
         
-        Compares self.lastfilebarename and self.nextseqnum to the 
-        current filebarename and iseqnum (int converted from seqnum) 
-        and if the nextseqnum is smaller than iseqnum + 1, calulcates 
-        the range of the missing files and appends it as list of unicode
-        to the self.missing dictionary.
+        Compares C{self.lastfilebarename} and C{self.nextseqnum} to the 
+        current C{filebarename} and C{iseqnum} (int converted from seqnum) 
+        and if C{self.nextseqnum} is smaller than C{iseqnum + 1}, calulcates 
+        the range of the missing files and appends it as C{list} of C{unicode}
+        to the C{self.missing} dictionary.
         
         @param dir: the path to the currently processed directory.
         @type dir: C{unicode}
@@ -795,7 +802,7 @@ class FileSequenceChecker(object):
                 print "Warning: nextfilenameparts is None"
             return True
         filebarename = curfilenameparts['filename']
-        if curfilenameparts.has_key('filename2'):
+        if 'filename2' in curfilenameparts:
             filename2 = curfilenameparts['filename2']
         else:
             filename2 = ''
@@ -818,13 +825,15 @@ class FileSequenceChecker(object):
             else:
                 end = 0
         except TypeError, e:
-            if DEBUG or verbose > 0: print e
+            if DEBUG or verbose > 0: 
+                print e
             self.reset()
             return True
         except ValueError, e:
             raise e
         if start and iseqnum < start:
-            if DEBUG or verbose > 0: print "sequence number (%i) < start (%i). Continuing..." % (iseqnum, start)
+            if DEBUG or verbose > 0: 
+                print "sequence number (%i) < start (%i). Continuing..." % (iseqnum, start)
             return True      
         if order == 'reverse':
             filename = "%s%s%s" % (filename2, seqnum, filebarename)
@@ -833,23 +842,27 @@ class FileSequenceChecker(object):
         fullfilename = "%s%s" % (filename, fileext) # (filebarename, seqnum, fileext)
         filepath = os.path.join(dir, fullfilename) 
         if verbose > 0:
-            print u"Processing '%s'" % filepath
+            print "Processing '%s'" % filepath
         if self.seqnumwidth < 0:
             self.seqnumwidth = len(seqnum)
-        if DEBUG:                
+        if DEBUG:
             print "filename = %s" % filename
+            print "filename2 = %s" % filename2
             print "filebarename = %s" % filebarename
             print "seqnum = %s" % seqnum
             print "iseqnum = %i" % iseqnum
             print "order = %s" % order
-        if self.lastfilebarename == u'':
+            print "nextfilenameparts = %s" % nextfilenameparts
+        if self.lastfilebarename == '':
             # lastfilebarename is empty, which means we are at the beginning 
             # of a new file sequence. Increment iseqnum into nextseqnum and 
             # continue interating.
             self.lastfilebarename = filebarename
             self.nextseqnum = iseqnum + 1
             if end and self.nextseqnum > end:
-                if DEBUG or verbose > 0: print "next sequence number (%i) would be > end (%i). Stopping iteration..." % (self.nextseqnum, end)
+                if DEBUG or verbose > 0: 
+                    print("next sequence number (%i) would be > end (%i). Stopping iteration..." % 
+                          (self.nextseqnum, end))
                 self.reset()
             return True
         if self.lastfilebarename == filebarename:
@@ -877,27 +890,30 @@ class FileSequenceChecker(object):
                     if order == 'reverse':
                         partsdict = dict(
                             filename2=filename2,
-                            seqnum=u"%0.*d" % (self.seqnumwidth, i), 
+                            seqnum="%0.*d" % (self.seqnumwidth, i), 
                             filebarename=filebarename, 
                             fileext=fileext
                         )
-                        missingfilename = u"%(filename2)s%(seqnum)s%(filebarename)s%(fileext)s" % partsdict
+                        missingfilename = "%(filename2)s%(seqnum)s%(filebarename)s%(fileext)s" % partsdict
                     else:
                         partsdict = dict(
                             filename2=filename2,
-                            seqnum=u"%0.*d" % (self.seqnumwidth, i), 
+                            seqnum="%0.*d" % (self.seqnumwidth, i), 
                             filebarename=filebarename, 
                             fileext=fileext
                         )
-                        missingfilename = u"%(filebarename)s%(seqnum)s%(filename2)s%(fileext)s" % partsdict
-                    if DEBUG or verbose > 0: print u"Missing %s" % missingfilename
-                    if self.missing.has_key(dir):
+                        missingfilename = "%(filebarename)s%(seqnum)s%(filename2)s%(fileext)s" % partsdict
+                    if DEBUG or verbose > 0: 
+                        print "Missing %s" % missingfilename
+                    if dir in self.missing:
                         self.missing[dir].append(missingfilename)
                     else:
                         self.missing[dir] = []
                         self.missing[dir].append(missingfilename)
                 if end and iseqnum > end:
-                    if DEBUG or verbose > 0: print "sequence number (%i) in next existing file name > end (%i). Stopping iteration..." % (iseqnum, end)
+                    if DEBUG or verbose > 0: 
+                        print("sequence number (%i) in next existing file name > end (%i). Stopping iteration..." % 
+                              (iseqnum, end))
                     # If self.end is reached for a file sequence reset state and return True 
                     # so that we may continue afresh with the next file sequence from the directory.
                     self.reset()
@@ -950,7 +966,7 @@ class FileSequenceChecker(object):
                     bdir = adir
                 if not os.path.exists(adir):
                     # check again to be sure the path did not turn invalid since the last time we checked
-                    raise ValueError(u"directory (%s) doesn't exist!" % bdir)
+                    raise ValueError("E: directory (%s) doesn't exist!" % bdir)
                 def pairs(lst):
                     ''' Iterate through a list in pairs. '''
                     i = iter(lst)
@@ -970,7 +986,8 @@ class FileSequenceChecker(object):
                     else:
                         break
         else:
-            if DEBUG or verbose > 0: print "Nothing missing."
+            if DEBUG or verbose > 0: 
+                print "Nothing missing."
         elapsed = float(time.time() - start)
         self.lastexectime = elapsed
         return self.missing
@@ -1011,6 +1028,7 @@ def main(argv=None):  # IGNORE:C0111
         expat = args.exclude
         strict = args.strict
         argv0 = sys.argv[0].split(u"/")[-1]
+        defaultencoding = sys.getdefaultencoding()
         
         if verbose > 0:
             print "Verbose mode on"
@@ -1022,7 +1040,7 @@ def main(argv=None):  # IGNORE:C0111
                 print "Using strict mode"
         
         if inpat and expat and inpat == expat:
-            raise CLIError(u"include and exclude pattern are equal! Nothing will be processed.")
+            raise CLIError("include and exclude pattern are equal! Nothing will be processed.")
         
         if splitpat and not template:
             raise CLIError("custom split pattern specified but no custom template:\n"\
@@ -1038,10 +1056,22 @@ def main(argv=None):  # IGNORE:C0111
                 fsc = FileSequenceChecker(rangestart, rangeend, recurse, True)
             else:
                 fsc = FileSequenceChecker(rangestart, rangeend, recurse)
-            if splitpat and template:
-                fsc.setsplitpattern(unicode(splitpat), template)
-            fsc.setincludepattern(inpat)
-            fsc.setexcludepattern(expat)
+            if defaultencoding == 'ascii':
+                if splitpat and template:
+                    fsc.setsplitpattern(unicode(splitpat, 'utf-8'), 
+                                        unicode(template, 'utf-8'))
+                if inpat:
+                    fsc.setincludepattern(unicode(inpat, 'utf-8'))
+                if expat:
+                    fsc.setexcludepattern(unicode(expat, 'utf-8'))
+            else:
+                if splitpat and template:
+                    fsc.setsplitpattern(unicode(splitpat, defaultencoding), 
+                                        unicode(template, defaultencoding))
+                if inpat:
+                    fsc.setincludepattern(unicode(inpat, defaultencoding))
+                if expat:
+                    fsc.setexcludepattern(unicode(expat, defaultencoding))
             missing = fsc.processdir(inpath, strict, verbose)
         raise KeyboardInterrupt
     except KeyboardInterrupt:
@@ -1049,9 +1079,9 @@ def main(argv=None):  # IGNORE:C0111
         if exectime > 0:
             if len(missing) > 0:
                 for containingdir, missingfiles in missing.items():
-                    print u"In %s:" % containingdir
+                    print "In %s:" % containingdir
                     for missingfile in missingfiles:
-                        print u"  Missing %s" % missingfile
+                        print "  Missing %s" % missingfile
                 if fsc.totalfiles == 1:
                     tfplural = ""
                 else:
@@ -1109,10 +1139,11 @@ if __name__ == "__main__":
         profile_filename = 'checkfileseq_profile.txt'
         import cProfile
         import pstats
-        cProfile.run('sys.exit(main(["-r", datadir]))', profile_filename)
+        cProfile.run('main(["-r", datadir])', profile_filename)
         statsfile = open("profile_stats.txt", "wb")
         p = pstats.Stats(profile_filename, stream=statsfile)
         stats = p.strip_dirs().sort_stats('cumulative')
+        stats.print_stats()
         print >> statsfile, stats.print_stats()
         statsfile.close()
         sys.exit(0)
