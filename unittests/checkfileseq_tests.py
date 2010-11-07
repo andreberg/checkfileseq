@@ -37,6 +37,43 @@ class TestFileSequenceCheckerGeneral(unittest.TestCase):
         ''' test system default encoding '''
         self.assertEquals(sys.getdefaultencoding(), 'ascii', 'to properly test unicode handling in filepaths we need default encoding to be ascii')
 
+class TestFileSequenceCheckerFileExcludePattern(unittest.TestCase):
+    # TODO: implement TestFileSequenceCheckerFileExcludePattern
+    pass
+
+    def setUp(self):
+        # TODO: setup attributes like within TestFileSequenceCheckerSplitPattern
+        pass
+    
+    def testFileExcludePatternMatches(self, params):
+        # TODO: implement testFileExcludePatternMatches
+        pass
+
+class TestFileSequenceCheckerExcludePattern(unittest.TestCase):
+    # TODO: implement TestFileSequenceCheckerExcludePattern
+    pass
+
+    def setUp(self):
+        # TODO: setup attributes like within TestFileSequenceCheckerSplitPattern
+        pass
+    
+    def testExcludePatternMatches(self, params):
+        # TODO: implement testExcludePatternMatches
+        pass
+
+class TestFileSequenceCheckerIncludePattern(unittest.TestCase):
+    # TODO: implement TestFileSequenceCheckerIncludePattern
+    pass
+
+    def setUp(self):
+        # TODO: setup attributes like within TestFileSequenceCheckerSplitPattern
+        pass
+    
+    def testIncludePatternMatches(self, params):
+        # TODO: implement testIncludePatternMatches
+        pass
+
+
 class TestFileSequenceCheckerSplitPattern(unittest.TestCase):
     ''' test cases for the split pattern '''
     
