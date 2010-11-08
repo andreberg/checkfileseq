@@ -49,9 +49,13 @@ backup/
 # PyDev stuff
 .pydevproject
 
-# Project specific
-sandbox.py
+# Python Stuff
 *.pyc
-doc/
-checkfileseq_profile*
-profile_stats*
+
+# Project specific
+
+# File Sequence Checker
+src/File Sequence Checker/sandbox.py
+src/File Sequence Checker/doc/
+src/File Sequence Checker/checkfileseq_profile*
+src/File Sequence Checker/profile_stats*

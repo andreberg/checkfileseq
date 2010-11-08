@@ -342,7 +342,7 @@ class FileSequenceChecker(object):
         self.fullpaths = bool(fullpaths)    #: index missing file lists by absolute paths instead of relative paths
         
         # private
-        self.lastfilebarename = ''         # the last file name, bare, that is without the sequence number part
+        self.lastfilebarename = ''          # the last file name, bare, that is without the sequence number part
         self.nextseqnum = -1                # the next sequence number to expect
         self.seqnumwidth = -1               # used for %.*s format specifiers in place of the star
         self.splitpat = self.SPLITPAT       # the pattern(s) to be used to split a file name into name and sequence number
@@ -1102,7 +1102,7 @@ def main(argv=None):  # IGNORE:C0111
             else:
                 plurality = "s"
             print ""
-            print "Processed %i file%s in %0.3f s" % (fsc.totalprocessed, plurality, exectime)
+            print "Processed %i file%s in %0.4f s" % (fsc.totalprocessed, plurality, exectime)
     except Exception, e:
         if DEBUG or False:
             raise(e)
