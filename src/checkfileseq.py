@@ -113,7 +113,7 @@ class FileSequenceChecker(object):
            
            It is also worth noting that L{self.start} and L{self.end} do B{NOT} play 
            an important role here. The constraining to files within a particular 
-           start and end point interval is employed and verified later within the 
+           start and end interval is utilized and verified later within the 
            comparing function.
            
         2. Iterate over the prepared directory contents and from each file name list

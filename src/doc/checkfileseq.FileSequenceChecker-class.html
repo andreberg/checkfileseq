@@ -1,0 +1,1235 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>checkfileseq.FileSequenceChecker</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="checkfileseq-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+      <th class="navbar" width="100%"></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        <a href="checkfileseq-module.html">Module&nbsp;checkfileseq</a> ::
+        Class&nbsp;FileSequenceChecker
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+        <tr><td align="right"><span class="options">[<a href="javascript:void(0);" class="privatelink"
+    onclick="toggle_private();">hide&nbsp;private</a>]</span></td></tr>
+        <tr><td align="right"><span class="options"
+            >[<a href="frames.html" target="_top">frames</a
+            >]&nbsp;|&nbsp;<a href="checkfileseq.FileSequenceChecker-class.html"
+            target="_top">no&nbsp;frames</a>]</span></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<!-- ==================== CLASS DESCRIPTION ==================== -->
+<h1 class="epydoc">Class FileSequenceChecker</h1><p class="nomargin-top"><span class="codelink"><a href="checkfileseq-pysrc.html#FileSequenceChecker">source&nbsp;code</a></span></p>
+<center>
+<center>  <map id="uml_class_diagram_for_checkfil_2" name="uml_class_diagram_for_checkfil_2">
+<area shape="rect" id="node3" href="checkfileseq.FileSequenceChecker-class.html#start" title="only process files with sequence number values greater than this number" alt="" coords="17,31,356,49"/>
+<area shape="rect" id="node3" href="checkfileseq.FileSequenceChecker-class.html#end" title="only process files with sequence number values less than or equal to this &#160;number" alt="" coords="17,49,356,68"/>
+<area shape="rect" id="node3" href="checkfileseq.FileSequenceChecker-class.html#recursive" title="process sub directories" alt="" coords="17,68,356,87"/>
+<area shape="rect" id="node3" href="checkfileseq.FileSequenceChecker-class.html#fullpaths" title="index missing file lists by absolute paths instead of relative paths" alt="" coords="17,87,356,105"/>
+<area shape="rect" id="node3" href="checkfileseq.FileSequenceChecker-class.html#setfileexcludes" title="Set a list of file names to be excluded from being evaluated." alt="" coords="17,108,356,127"/>
+<area shape="rect" id="node3" href="checkfileseq.FileSequenceChecker-class.html#setexcludepattern" title="Paths matching this pattern will be excluded from being evaluated, e.g." alt="" coords="17,127,356,145"/>
+<area shape="rect" id="node3" href="checkfileseq.FileSequenceChecker-class.html#setincludepattern" title="Only paths matching this regex pattern will be evaluated." alt="" coords="17,145,356,164"/>
+<area shape="rect" id="node3" href="checkfileseq.FileSequenceChecker-class.html#setsplitpattern" title="Set the regex pattern that will split the file name into name and sequence &#160;number parts." alt="" coords="17,164,356,183"/>
+<area shape="rect" id="node3" href="checkfileseq.FileSequenceChecker-class.html#processdir" title="Main entry method: process the contents of a directory." alt="" coords="17,183,356,201"/>
+<area shape="rect" id="node1" href="checkfileseq.FileSequenceChecker-class.html" title="A class for (recursively) checking a directory with file sequences for missing files." alt="" coords="5,6,368,207"/>
+</map>
+  <img src="uml_class_diagram_for_checkfil_2.gif" alt='' usemap="#uml_class_diagram_for_checkfil_2" ismap="ismap" class="graph-without-title" />
+</center>
+</center>
+<hr />
+<h1 class="heading">FileSequenceChecker</h1>
+    <p>A class for (recursively) checking a directory with file sequences 
+    for missing files.</p>
+    <h2 class="heading">Modus Operandi</h2>
+      <p>Processing happens in three steps:</p>
+      <ol start="1">
+        <li>
+          Generate a directory contents dict by splitting each file name 
+          into a name and sequence number part when generating lists for 
+          each file sequence present in the dir. We sort these lists in a 
+          natural way, first by sequence number, then by file name. This 
+          step is also responsible for including or excluding files based 
+          on criteria such as command line args 
+          (<code>--include/--exclude</code>) and/or <a 
+          href="checkfileseq.FileSequenceChecker-class.html#FILEEXCLUDES" 
+          class="link" onclick="show_private();">FILEEXCLUDES</a>.
+          <p>For each directory a file name list is saved, containing dicts
+          with 5 keys:</p>
+          <ol start="1">
+            <li>
+              file name (<code>filename</code>),
+            </li>
+            <li>
+              sequence number (<code>seqnum</code>),
+            </li>
+            <li>
+              file extension (incl. dot) (<code>fileext</code>),
+            </li>
+            <li>
+              order (<code>order</code>),
+            </li>
+            <li>
+              file name, 2nd part (optional) (<code>filename2</code>)
+            </li>
+          </ol>
+          <p>The order (<code>'normal'</code> or <code>'reverse'</code>) 
+          specifies which comes first: file name or sequence number.</p>
+          <p>A fifth key <code>filename2</code> may exist which contains 
+          the second filename part. If present this part will be 
+          re-inserted again (appropriate to the order) when constructing 
+          the missing file names as part of creating a missing files 
+          series.</p>
+          <p>The order must be stored explicitly to be able to print 
+          missing file names in a way directly relating to the first file 
+          in the sequence.</p>
+          <p>It is also worth noting that <a 
+          href="checkfileseq.FileSequenceChecker-class.html#start" 
+          class="link">self.start</a> and <a 
+          href="checkfileseq.FileSequenceChecker-class.html#end" 
+          class="link">self.end</a> do <b>NOT</b> play an important role 
+          here. The constraining to files within a particular start and end
+          interval is utilized and verified later within the comparing 
+          function.</p>
+        </li>
+        <li>
+          Iterate over the prepared directory contents and from each file 
+          name list pass dicts representing current file name parts and 
+          next file name parts to a comparing function.
+          <p>By comparing clues from both dictionaries we can determine if 
+          files are missing and how many. Lists with missing file names are
+          created on a per directory basis. Each list is then added to a 
+          dictionary, keyed by path to the directory that's currently 
+          processed.</p>
+        </li>
+        <li>
+          <a href="checkfileseq.FileSequenceChecker-class.html#processdir" 
+          class="link">self.processdir()</a> returns this dictionary, or an
+          empty dictionary if no there are no missing files, so that the 
+          caller can further do her own processing.
+        </li>
+      </ol>
+    <h2 class="heading">Caveats</h2>
+      <p>Even after careful testing and development, there are still some 
+      caveats left. These are mostly coming from not being able to do 
+      everything automatically and then hide it away as implementation 
+      detail, especially when faced with inherent ambiguities.</p>
+      <p>For example: certain file names are just not distuingishable 
+      enough to match one default regex pattern over the other. This is 
+      because from a regex based matching perspective strings like 
+      <code>v105-name</code> and <code>name-v105</code> are just too 
+      similar. Think about it: to match the first string you could say: 
+      match any lowercase letter followed by a number.</p>
+      <p>But can you be sure that you will always need to match just one 
+      lowercase letter? I would argue you can't. Then you say: match any 
+      lowercase letter any number of times followed by a number. If you now
+      compare this with the second string you will find that this 
+      definition will match both strings. Of course you can mess around 
+      with &quot;rooting&quot; to different sides of the string 
+      (<code>^</code> vs. <code>$</code>) and also impose a superficial 
+      ordering of less-likely to likely when applying different patterns, 
+      but fundamentally there will always be a at least one case that is 
+      too ambiguous compared to another case.</p>
+      <p>Ambiguities like these are hard to resolve by automation. Any good
+      API will defer these decisions to the user of the class and thus 
+      delegate the choice to the one who should know most about specific 
+      needs.</p>
+      <p>In the case of the CLI that <a 
+      href="checkfileseq.FileSequenceChecker-class.html" 
+      class="link">FileSequenceChecker</a> was originally made for, command
+      line arguments give the end user the ability to define a pattern and 
+      a replacement template themselves, so as to cater to these special 
+      cases.</p>
+    <h2 class="heading">Example Use</h2>
+      <p>The following example recursively processes some directory and 
+      only looks at files from a file sequence which have sequence numbers 
+      within the range 0 through 10.</p>
+<pre class="py-doctest">
+<span class="py-prompt">&gt;&gt;&gt; </span>somedir = <span class="py-string">'unittests/data/reverse_order'</span>
+<span class="py-prompt">&gt;&gt;&gt; </span>fsc = FileSequenceChecker(0, 10) 
+<span class="py-prompt">&gt;&gt;&gt; </span>missing = fsc.processdir(somedir)
+<span class="py-prompt">&gt;&gt;&gt; </span><span class="py-keyword">if</span> len(missing) &gt; 0:
+<span class="py-more">... </span>    <span class="py-keyword">for</span> containingdir, missingfiles <span class="py-keyword">in</span> missing.items():
+<span class="py-more">... </span>        <span class="py-keyword">print</span> u<span class="py-string">&quot;In '%s':&quot;</span> % containingdir
+<span class="py-more">... </span>        <span class="py-keyword">for</span> missingfile <span class="py-keyword">in</span> missingfiles:
+<span class="py-more">... </span>            <span class="py-keyword">print</span> u<span class="py-string">&quot;  Missing %s&quot;</span> % missingfile
+<span class="py-output">In 'unittests/data/reverse_order':</span>
+<span class="py-output">  Missing 2 Write30.png</span>
+<span class="py-output">  Missing 4 Write30.png</span>
+<span class="py-output">  Missing 5 Write30.png</span></pre>
+      <p>A <a href="checkfileseq.FileSequenceChecker-class.html" 
+      class="link">FileSequenceChecker</a> instance is key subscriptable. 
+      If the instance's <code>missing</code> attribute (a dict with the 
+      pathnames for dirs with missing files as keys) has an entry for a 
+      given path it will return a list of file names for all missing files 
+      under that path. E.g.:</p>
+<pre class="py-doctest">
+<span class="py-prompt">&gt;&gt;&gt; </span><span class="py-keyword">print</span> fsc[somedir]
+<span class="py-output">[u'2 Write30.png', u'4 Write30.png', u'5 Write30.png']</span></pre>
+      <p>You can also ask a <a 
+      href="checkfileseq.FileSequenceChecker-class.html" 
+      class="link">FileSequenceChecker</a> instance for the total amount of
+      missing files detected:</p>
+<pre class="py-doctest">
+<span class="py-prompt">&gt;&gt;&gt; </span><span class="py-keyword">print</span> fsc.totalfiles
+<span class="py-output">3</span></pre>
+      <p>If you want to know how many dirs there were with missing 
+      files:</p>
+<pre class="py-doctest">
+<span class="py-prompt">&gt;&gt;&gt; </span><span class="py-keyword">print</span> fsc.totaldirs
+<span class="py-output">1</span></pre>
+      <p>You can get the amount of time in fractional seconds that <a 
+      href="checkfileseq.FileSequenceChecker-class.html#processdir" 
+      class="link">self.processdir()</a> took by calling 
+      <code>fsc.lastexectime</code> and it will return it as a 
+      <code>float</code> value.</p>
+    <h2 class="heading">Implementation Notes</h2>
+      <p>As this class has <i>Sequence</i> in its name, a strong case was 
+      made initially when designing the class, for making it into an 
+      iterable object, which, for example, would then support Pythonic 
+      syntax facilities such as slice notation among others. In other 
+      words: to treat the <a 
+      href="checkfileseq.FileSequenceChecker-class.html" 
+      class="link">FileSequenceChecker</a> as a sequence-like proxy object 
+      that would delegate all the functionality that's required for the 
+      problem domain of the CLI implementation to standard Python sequence 
+      objects like lists, tuples etc.</p>
+      <p>However, this approach would have required to split the 
+      responsibilities of <a 
+      href="checkfileseq.FileSequenceChecker-class.html" 
+      class="link">FileSequenceChecker</a> into at least two classes:</p>
+      <p>a <code>FileSequence</code> object that has information only about
+      the validity of the paths making up one particular file sequence and 
+      also stores cross-referenced information about the parts that make up
+      each file name in that sequence, and a <code>DirectoryParser</code> 
+      object that builds a list of file sequence candidates for processing 
+      later on.</p>
+      <p>For each encountered file sequence from this previously created, 
+      and thus pre-filtered directory list, one <code>FileSequence</code> 
+      object is created and iterated upon. This iterating cycle would then 
+      perform calulation of all missing file names in the same way as done 
+      currently in the comparing function.</p>
+      <p>While this approach has some elegance to it, from a <i>GTD</i> 
+      perspective of creating a command line tool for a specific purpose, 
+      the <i>'divide et impera'</i> approach was abandoned in favour of a 
+      <i>one-class-fits-all</i> design.</p>
+      <p>This was also helped by the fact that it became apparent pretty 
+      early that there would not be much need for things like slice 
+      notation and most internal micro problems could be handled by 
+      utilizing standard Python types.</p>
+
+<!-- ==================== INSTANCE METHODS ==================== -->
+<a name="section-InstanceMethods"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Instance Methods</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-InstanceMethods"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="checkfileseq.FileSequenceChecker-class.html#__init__" class="summary-sig-name" onclick="show_private();">__init__</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">start</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">end</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">recursive</span>=<span class="summary-sig-default">False</span>,
+        <span class="summary-sig-arg">fullpaths</span>=<span class="summary-sig-default">False</span>)</span><br />
+      x.__init__(...) initializes x; see x.__class__.__doc__ for signature</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="checkfileseq-pysrc.html#FileSequenceChecker.__init__">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="checkfileseq.FileSequenceChecker-class.html#__str__" class="summary-sig-name" onclick="show_private();">__str__</a>(<span class="summary-sig-arg">self</span>)</span><br />
+      str(x)</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="checkfileseq-pysrc.html#FileSequenceChecker.__str__">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="checkfileseq.FileSequenceChecker-class.html#__repr__" class="summary-sig-name" onclick="show_private();">__repr__</a>(<span class="summary-sig-arg">self</span>)</span><br />
+      repr(x)</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="checkfileseq-pysrc.html#FileSequenceChecker.__repr__">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="__unicode__"></a><span class="summary-sig-name">__unicode__</span>(<span class="summary-sig-arg">self</span>)</span></td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="checkfileseq-pysrc.html#FileSequenceChecker.__unicode__">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="__getitem__"></a><span class="summary-sig-name">__getitem__</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">key</span>)</span></td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="checkfileseq-pysrc.html#FileSequenceChecker.__getitem__">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="__len__"></a><span class="summary-sig-name">__len__</span>(<span class="summary-sig-arg">self</span>)</span></td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="checkfileseq-pysrc.html#FileSequenceChecker.__len__">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="__getattr__"></a><span class="summary-sig-name">__getattr__</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">attr</span>)</span></td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="checkfileseq-pysrc.html#FileSequenceChecker.__getattr__">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="checkfileseq.FileSequenceChecker-class.html#setfileexcludes" class="summary-sig-name">setfileexcludes</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">filenames</span>)</span><br />
+      Set a list of file names to be excluded from being evaluated.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="checkfileseq-pysrc.html#FileSequenceChecker.setfileexcludes">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="checkfileseq.FileSequenceChecker-class.html#setexcludepattern" class="summary-sig-name">setexcludepattern</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">pattern</span>)</span><br />
+      Paths matching this pattern will be excluded from being evaluated, 
+      e.g.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="checkfileseq-pysrc.html#FileSequenceChecker.setexcludepattern">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="setincludepattern"></a><span class="summary-sig-name">setincludepattern</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">pattern</span>)</span><br />
+      Only paths matching this regex pattern will be evaluated.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="checkfileseq-pysrc.html#FileSequenceChecker.setincludepattern">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="checkfileseq.FileSequenceChecker-class.html#setsplitpattern" class="summary-sig-name">setsplitpattern</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">pattern</span>,
+        <span class="summary-sig-arg">template</span>=<span class="summary-sig-default">None</span>)</span><br />
+      Set the regex pattern that will split the file name into name and 
+      sequence number parts.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="checkfileseq-pysrc.html#FileSequenceChecker.setsplitpattern">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="reset"></a><span class="summary-sig-name">reset</span>(<span class="summary-sig-arg">self</span>)</span><br />
+      Reset the comparance variables to their initial state.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="checkfileseq-pysrc.html#FileSequenceChecker.reset">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type"><code>dict</code> or <code>None</code></span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="checkfileseq.FileSequenceChecker-class.html#splitfilename" class="summary-sig-name" onclick="show_private();">splitfilename</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">filename</span>)</span><br />
+      Using self.splitpat split the filename into filename and seqnum part.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="checkfileseq-pysrc.html#FileSequenceChecker.splitfilename">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="checkfileseq.FileSequenceChecker-class.html#preparedircontents" class="summary-sig-name" onclick="show_private();">preparedircontents</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">inpath</span>,
+        <span class="summary-sig-arg">verbose</span>=<span class="summary-sig-default">0</span>)</span><br />
+      Prepare <code>self.dircontents</code> to contain directory contents 
+      in lists, sorted naturally-like: first by sequence number then 
+      alphabetically by file name.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="checkfileseq-pysrc.html#FileSequenceChecker.preparedircontents">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type"><code>bool</code></span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="checkfileseq.FileSequenceChecker-class.html#comparefile" class="summary-sig-name" onclick="show_private();">comparefile</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">dir</span>,
+        <span class="summary-sig-arg">curfilenameparts</span>,
+        <span class="summary-sig-arg">nextfilenameparts</span>,
+        <span class="summary-sig-arg">verbose</span>=<span class="summary-sig-default">0</span>)</span><br />
+      Compare one file with the next file in the sequence.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="checkfileseq-pysrc.html#FileSequenceChecker.comparefile">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type"><code>dict</code></span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="checkfileseq.FileSequenceChecker-class.html#processdir" class="summary-sig-name">processdir</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">inpath</span>,
+        <span class="summary-sig-arg">strict</span>=<span class="summary-sig-default">False</span>,
+        <span class="summary-sig-arg">verbose</span>=<span class="summary-sig-default">0</span>)</span><br />
+      Main entry method: process the contents of a directory.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="checkfileseq-pysrc.html#FileSequenceChecker.processdir">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" class="summary">
+    <p class="indent-wrapped-lines"><b>Inherited from <code>object</code></b>:
+      <code>__delattr__</code>,
+      <code>__format__</code>,
+      <code>__getattribute__</code>,
+      <code>__hash__</code>,
+      <code>__new__</code>,
+      <code>__reduce__</code>,
+      <code>__reduce_ex__</code>,
+      <code>__setattr__</code>,
+      <code>__sizeof__</code>,
+      <code>__subclasshook__</code>
+      </p>
+    </td>
+  </tr>
+</table>
+<!-- ==================== CLASS VARIABLES ==================== -->
+<a name="section-ClassVariables"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Class Variables</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-ClassVariables"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="checkfileseq.FileSequenceChecker-class.html#SPLITPAT" class="summary-name" onclick="show_private();">SPLITPAT</a> = <code title="[{'order': 'reverse',
+  'pattern': re.compile(r'(?x)^(?=\d)(?P&lt;seqnum&gt;\d+?)(?P&lt;filename&gt;.+)'\
+)},
+ {'order': 'reverse',
+  'pattern': re.compile(r'(?x)^(?P&lt;filename2&gt;\D)(?P&lt;seqnum&gt;\d+)(?P&lt;fil\
+ename&gt;.*?)(?=\b)')},
+ {'order': 'normal',
+  'pattern': re.compile(r'(?x)(?!\d)(?P&lt;filename&gt;.+?)(?P&lt;seqnum&gt;\d+)(?\
+..."><code class="variable-group">[</code><code class="variable-group">{</code><code class="variable-quote">'</code><code class="variable-string">order</code><code class="variable-quote">'</code><code class="variable-op">: </code><code class="variable-quote">'</code><code class="variable-string">reverse</code><code class="variable-quote">'</code><code class="variable-op">, </code><code class="variable-quote">'</code><code class="variable-string">pattern</code><code class="variable-quote">'</code><code class="variable-op">: </code>re.compile(r'<code class="re-flags">(?x)</code>^<code class="variable-ellipsis">...</code></code><br />
+      default split patterns
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="checkfileseq.FileSequenceChecker-class.html#FILEEXCLUDES" class="summary-name" onclick="show_private();">FILEEXCLUDES</a> = <code title="['.DS_Store',
+ '.Spotlight-V100',
+ '.Trashes',
+ '.com.apple.timemachine.supported',
+ '.fseventsd',
+ '.syncinfo',
+ '.TemporaryItems',
+ 'Desktop DF',
+..."><code class="variable-group">[</code><code class="variable-quote">'</code><code class="variable-string">.DS_Store</code><code class="variable-quote">'</code><code class="variable-op">, </code><code class="variable-quote">'</code><code class="variable-string">.Spotlight-V100</code><code class="variable-quote">'</code><code class="variable-op">, </code><code class="variable-quote">'</code><code class="variable-string">.Trashes</code><code class="variable-quote">'</code><code class="variable-op">, </code><code class="variable-quote">'</code><code class="variable-string">.</code><code class="variable-ellipsis">...</code></code>
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="checkfileseq.FileSequenceChecker-class.html#__all__" class="summary-name" onclick="show_private();">__all__</a> = <code title="['setfileexcludes',
+ 'setincludepattern',
+ 'setexcludepattern',
+ 'setsplitpattern',
+ 'processdir']"><code class="variable-group">[</code><code class="variable-quote">'</code><code class="variable-string">setfileexcludes</code><code class="variable-quote">'</code><code class="variable-op">, </code><code class="variable-quote">'</code><code class="variable-string">setincludepattern</code><code class="variable-quote">'</code><code class="variable-op">, </code><code class="variable-quote">'</code><code class="variable-string">setexclude</code><code class="variable-ellipsis">...</code></code>
+    </td>
+  </tr>
+</table>
+<!-- ==================== INSTANCE VARIABLES ==================== -->
+<a name="section-InstanceVariables"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Instance Variables</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-InstanceVariables"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="start"></a><span class="summary-name">start</span><br />
+      only process files with sequence number values greater than this 
+      number
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="end"></a><span class="summary-name">end</span><br />
+      only process files with sequence number values less than or equal to 
+      this number
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="recursive"></a><span class="summary-name">recursive</span><br />
+      process sub directories
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="fullpaths"></a><span class="summary-name">fullpaths</span><br />
+      index missing file lists by absolute paths instead of relative paths
+    </td>
+  </tr>
+</table>
+<!-- ==================== PROPERTIES ==================== -->
+<a name="section-Properties"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Properties</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-Properties"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+  <tr>
+    <td colspan="2" class="summary">
+    <p class="indent-wrapped-lines"><b>Inherited from <code>object</code></b>:
+      <code>__class__</code>
+      </p>
+    </td>
+  </tr>
+</table>
+<!-- ==================== METHOD DETAILS ==================== -->
+<a name="section-MethodDetails"></a>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Method Details</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-MethodDetails"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+</table>
+<a name="__init__"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">__init__</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">start</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">end</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">recursive</span>=<span class="sig-default">False</span>,
+        <span class="sig-arg">fullpaths</span>=<span class="sig-default">False</span>)</span>
+    <br /><em class="fname">(Constructor)</em>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="checkfileseq-pysrc.html#FileSequenceChecker.__init__">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>x.__init__(...) initializes x; see x.__class__.__doc__ for 
+  signature</p>
+  <dl class="fields">
+    <dt>Overrides:
+        object.__init__
+        <dd><em class="note">(inherited documentation)</em></dd>
+    </dt>
+  </dl>
+</td></tr></table>
+</div>
+<a name="__str__"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">__str__</span>(<span class="sig-arg">self</span>)</span>
+    <br /><em class="fname">(Informal representation operator)</em>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="checkfileseq-pysrc.html#FileSequenceChecker.__str__">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>str(x)</p>
+  <dl class="fields">
+    <dt>Overrides:
+        object.__str__
+        <dd><em class="note">(inherited documentation)</em></dd>
+    </dt>
+  </dl>
+</td></tr></table>
+</div>
+<a name="__repr__"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">__repr__</span>(<span class="sig-arg">self</span>)</span>
+    <br /><em class="fname">(Representation operator)</em>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="checkfileseq-pysrc.html#FileSequenceChecker.__repr__">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>repr(x)</p>
+  <dl class="fields">
+    <dt>Overrides:
+        object.__repr__
+        <dd><em class="note">(inherited documentation)</em></dd>
+    </dt>
+  </dl>
+</td></tr></table>
+</div>
+<a name="setfileexcludes"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">setfileexcludes</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">filenames</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="checkfileseq-pysrc.html#FileSequenceChecker.setfileexcludes">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Set a list of file names to be excluded from being evaluated.</p>
+  <p>Often these are hidden or system files, like <code>.DS_Store</code> on
+  a Mac or <code>Thumbs.db</code> on a Windows PC for example.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>filenames</code></strong> (list) - a list of file names</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="setexcludepattern"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">setexcludepattern</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">pattern</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="checkfileseq-pysrc.html#FileSequenceChecker.setexcludepattern">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Paths matching this pattern will be excluded from being evaluated, 
+  e.g. not included in the prepared directory contents.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>pattern</code></strong> (regex) - a regex pattern</li>
+    </ul></dd>
+  </dl>
+<div class="fields">      <p><strong>Note:</strong>
+        excluding has precedence over including.
+      </p>
+</div></td></tr></table>
+</div>
+<a name="setsplitpattern"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">setsplitpattern</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">pattern</span>,
+        <span class="sig-arg">template</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="checkfileseq-pysrc.html#FileSequenceChecker.setsplitpattern">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Set the regex pattern that will split the file name into name and 
+  sequence number parts.</p>
+  <p>Must contain two named groups: <code>filename</code> and 
+  <code>seqnum</code> where the first should match the file name part and 
+  the second should match the sequence number part. Can optionally contain 
+  a third named groupd <code>filename2</code> for cases where the sequence 
+  number splits the filename in half.</p>
+  <p>If a custom pattern is supplied as raw unicode string, template 
+  <b>cannot</b> be <code>None</code>.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>pattern</code></strong> (<code>list of unicode</code> or <code>unicode</code>) - a list of unicode regex patterns or a unicode string to be used 
+          as the regex pattern.</li>
+        <li><strong class="pname"><code>template</code></strong> (<code>unicode</code>) - format string with dict-based replacement tokens (e.g. 
+          <code>%s(<i>&lt;key_name&gt;</i>)s</code>) that correspond to the
+          named groups given in the pattern. Must not be <code>None</code> 
+          if pattern is of type <code>unicode</code>!</li>
+    </ul></dd>
+    <dt>Raises:</dt>
+    <dd><ul class="nomargin-top">
+        <li><code><strong class='fraise'>ValueError</strong></code> - if the regex pattern doesn't contain one named regex group called 
+        <code>filename</code> and one named group called 
+        <code>seqnum</code>.</li>
+    </ul></dd>
+  </dl>
+<div class="fields">      <p><strong>Note:</strong>
+        will attempt to sanitize the pattern, for example by doing things 
+        like chopping off single and double quotation marks (if present) at
+        the beginning and end of the pattern string.
+      </p>
+</div></td></tr></table>
+</div>
+<a name="splitfilename"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">splitfilename</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">filename</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="checkfileseq-pysrc.html#FileSequenceChecker.splitfilename">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Using self.splitpat split the filename into filename and seqnum 
+  part.</p>
+  <p><code>self.splitpat</code> can be of type list or of type unicode raw 
+  string. The list form should contain unicode raw string patterns in 
+  reverse order of likely occurrence. The direct unicode raw string pattern
+  form is there to facilitate to ability for the command line user to 
+  supply a pattern in a command line argument.</p>
+  <p>Internally the list form is the default and will see each pattern used
+  to perform a match so that more file sequence naming cases can be covered
+  &#8211; especially when multiple differently named file sequences co-exist in 
+  the same directory.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>filename</code></strong> (<code>unicode</code>) - unicode string representing the file name</li>
+    </ul></dd>
+    <dt>Returns: <code>dict</code> or <code>None</code></dt>
+        <dd>dictionary with three entries: a file name 
+          (<code>filename</code>), a sequence number (<code>seqnum</code>) 
+          and an order (<code>order</code>), where reverse order is seqnum 
+          then filename and normal order is filename then seqnum.</dd>
+    <dt>Raises:</dt>
+    <dd><ul class="nomargin-top">
+        <li><code><strong class='fraise'>TypeError</strong></code> - if <code>self.splitpat</code> is not of type <code>unicode</code> 
+        or <code>list</code>.</li>
+        <li><code><strong class='fraise'>ValueError</strong></code> - When <code>self.splitpat</code> is of type <code>unicode</code> and
+        an order can not be inferred by parsing the pattern and looking for
+        what the ordering is between both named groups.</li>
+    </ul></dd>
+  </dl>
+<div class="fields">      <p><strong>Note:</strong>
+        May return <code>None</code> if no match could be made so that an 
+        enclosing loop can know when to continue.
+      </p>
+</div></td></tr></table>
+</div>
+<a name="preparedircontents"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">preparedircontents</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">inpath</span>,
+        <span class="sig-arg">verbose</span>=<span class="sig-default">0</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="checkfileseq-pysrc.html#FileSequenceChecker.preparedircontents">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Prepare <code>self.dircontents</code> to contain directory contents in
+  lists, sorted naturally-like: first by sequence number then 
+  alphabetically by file name.</p>
+  <p>Given a filepath get the directory contents, split each file into 
+  filename part(s) and a sequence number using <code>self.splitpat</code> 
+  (either as pattern list or pattern itsel) and put each directory and it's
+  contents as a sorted list into <code>self.dircontents</code>, keyed by 
+  the directory's file path.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>inpath</code></strong> (<code>unicode</code>) - a unicode file path string</li>
+        <li><strong class="pname"><code>verbose</code></strong> (<code>int</code>) - print informational messages to <code>stdout</code>, like when a 
+          file name is excluded because its file path matched the exclude 
+          pattern.</li>
+    </ul></dd>
+    <dt>Raises:</dt>
+    <dd><ul class="nomargin-top">
+        <li><code><strong class='fraise'>ValueError</strong></code> - if the <code>inpath</code> doesn't exist or if <code>inpath</code> 
+        is not a directory.</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="comparefile"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">comparefile</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">dir</span>,
+        <span class="sig-arg">curfilenameparts</span>,
+        <span class="sig-arg">nextfilenameparts</span>,
+        <span class="sig-arg">verbose</span>=<span class="sig-default">0</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="checkfileseq-pysrc.html#FileSequenceChecker.comparefile">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Compare one file with the next file in the sequence.</p>
+  <p>This method is called during processing of the loop which iterates 
+  over all file sequences.</p>
+  <p>Compares <code>self.lastfilebarename</code> and 
+  <code>self.nextseqnum</code> to the current <code>filebarename</code> and
+  <code>iseqnum</code> (int converted from seqnum) and if 
+  <code>self.nextseqnum</code> is smaller than <code>iseqnum + 1</code>, 
+  calulcates the range of the missing files and appends it as 
+  <code>list</code> of <code>unicode</code> to the 
+  <code>self.missing</code> dictionary.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>dir</code></strong> (<code>unicode</code>) - the path to the currently processed directory.</li>
+        <li><strong class="pname"><code>curfilenameparts</code></strong> (<code>dict</code>) - file name, sequence number, file extension and order of the 
+          <i>current</i> file.</li>
+        <li><strong class="pname"><code>nextfilenameparts</code></strong> (<code>dict</code>) - file name, sequence number, file extension and order of the 
+          <i>next</i> file.</li>
+        <li><strong class="pname"><code>verbose</code></strong> (<code>int</code>) - include verbose output.</li>
+    </ul></dd>
+    <dt>Returns: <code>bool</code></dt>
+        <dd>False if enclosing caller loop should break. True if enclosing 
+          caller loop should continue.</dd>
+  </dl>
+<div class="fields">      <p><strong>Note:</strong>
+        <i>current</i> and <i>next</i> are not neccessarily referring to 
+        files from the same file sequence they may also be from different 
+        file sequences, signaling the current file will be the last of its 
+        sequence.
+      </p>
+</div></td></tr></table>
+</div>
+<a name="processdir"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">processdir</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">inpath</span>,
+        <span class="sig-arg">strict</span>=<span class="sig-default">False</span>,
+        <span class="sig-arg">verbose</span>=<span class="sig-default">0</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="checkfileseq-pysrc.html#FileSequenceChecker.processdir">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Main entry method: process the contents of a directory.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>inpath</code></strong> (<code>unicode</code>) - the file path to a directory to process.</li>
+        <li><strong class="pname"><code>strict</code></strong> (<code>bool</code>) - use re.match instead of re.search for splitting the file name</li>
+        <li><strong class="pname"><code>verbose</code></strong> (<code>int</code>) - print informational messages.</li>
+    </ul></dd>
+    <dt>Returns: <code>dict</code></dt>
+        <dd>dictionary with missing files. Contains as keys paths to 
+          directories with missing files. Each path key contains as its 
+          value a list of missing unicode file names. If there are no 
+          missing files, returns an empty dictionary.</dd>
+    <dt>Raises:</dt>
+    <dd><ul class="nomargin-top">
+        <li><code><strong class='fraise'>ValueError</strong></code> - if the directory at inpath doesn't exist.</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<br />
+<!-- ==================== CLASS VARIABLE DETAILS ==================== -->
+<a name="section-ClassVariableDetails"></a>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Class Variable Details</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-ClassVariableDetails"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+</table>
+<a name="SPLITPAT"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <h3 class="epydoc">SPLITPAT</h3>
+  <p>default split patterns</p>
+  <dl class="fields">
+  </dl>
+  <dl class="fields">
+    <dt>Value:</dt>
+      <dd><table><tr><td><pre class="variable">
+<code class="variable-group">[</code><code class="variable-group">{</code><code class="variable-quote">'</code><code class="variable-string">order</code><code class="variable-quote">'</code><code class="variable-op">: </code><code class="variable-quote">'</code><code class="variable-string">reverse</code><code class="variable-quote">'</code><code class="variable-op">,</code>
+  <code class="variable-quote">'</code><code class="variable-string">pattern</code><code class="variable-quote">'</code><code class="variable-op">: </code>re.compile(r'<code class="re-flags">(?x)</code>^<code class="re-group">(?=</code>\d<code class="re-group">)</code><code class="re-group">(?P&lt;</code><code class="re-ref">seqnum</code><code class="re-group">&gt;</code>\d<code class="re-op">+?</code><code class="re-group">)</code><code class="re-group">(?P&lt;</code><code class="re-ref">filename</code><code class="re-group">&gt;</code>.<code class="re-op">+</code><code class="re-group">)</code>'<span class="variable-linewrap"><img src="crarr.png" alt="\" /></span>
+)<code class="variable-group">}</code><code class="variable-op">,</code>
+ <code class="variable-group">{</code><code class="variable-quote">'</code><code class="variable-string">order</code><code class="variable-quote">'</code><code class="variable-op">: </code><code class="variable-quote">'</code><code class="variable-string">reverse</code><code class="variable-quote">'</code><code class="variable-op">,</code>
+  <code class="variable-quote">'</code><code class="variable-string">pattern</code><code class="variable-quote">'</code><code class="variable-op">: </code>re.compile(r'<code class="re-flags">(?x)</code>^<code class="re-group">(?P&lt;</code><code class="re-ref">filename2</code><code class="re-group">&gt;</code>\D<code class="re-group">)</code><code class="re-group">(?P&lt;</code><code class="re-ref">seqnum</code><code class="re-group">&gt;</code>\d<code class="re-op">+</code><code class="re-group">)</code><code class="re-group">(?P&lt;</code><code class="re-ref">fil</code><span class="variable-linewrap"><img src="crarr.png" alt="\" /></span>
+<code class="re-ref">ename</code><code class="re-group">&gt;</code>.<code class="re-op">*?</code><code class="re-group">)</code><code class="re-group">(?=</code>\b<code class="re-group">)</code>')<code class="variable-group">}</code><code class="variable-op">,</code>
+ <code class="variable-group">{</code><code class="variable-quote">'</code><code class="variable-string">order</code><code class="variable-quote">'</code><code class="variable-op">: </code><code class="variable-quote">'</code><code class="variable-string">normal</code><code class="variable-quote">'</code><code class="variable-op">,</code>
+  <code class="variable-quote">'</code><code class="variable-string">pattern</code><code class="variable-quote">'</code><code class="variable-op">: </code>re.compile(r'<code class="re-flags">(?x)</code><code class="re-group">(?!</code>\d<code class="re-group">)</code><code class="re-group">(?P&lt;</code><code class="re-ref">filename</code><code class="re-group">&gt;</code>.<code class="re-op">+?</code><code class="re-group">)</code><code class="re-group">(?P&lt;</code><code class="re-ref">seqnum</code><code class="re-group">&gt;</code>\d<code class="re-op">+</code><code class="re-group">)</code><code class="re-group">(?</code><span class="variable-linewrap"><img src="crarr.png" alt="\" /></span>
+<code class="variable-ellipsis">...</code>
+</pre></td></tr></table>
+</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="FILEEXCLUDES"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <h3 class="epydoc">FILEEXCLUDES</h3>
+  
+  <dl class="fields">
+  </dl>
+  <dl class="fields">
+    <dt>Value:</dt>
+      <dd><table><tr><td><pre class="variable">
+<code class="variable-group">[</code><code class="variable-quote">'</code><code class="variable-string">.DS_Store</code><code class="variable-quote">'</code><code class="variable-op">,</code>
+ <code class="variable-quote">'</code><code class="variable-string">.Spotlight-V100</code><code class="variable-quote">'</code><code class="variable-op">,</code>
+ <code class="variable-quote">'</code><code class="variable-string">.Trashes</code><code class="variable-quote">'</code><code class="variable-op">,</code>
+ <code class="variable-quote">'</code><code class="variable-string">.com.apple.timemachine.supported</code><code class="variable-quote">'</code><code class="variable-op">,</code>
+ <code class="variable-quote">'</code><code class="variable-string">.fseventsd</code><code class="variable-quote">'</code><code class="variable-op">,</code>
+ <code class="variable-quote">'</code><code class="variable-string">.syncinfo</code><code class="variable-quote">'</code><code class="variable-op">,</code>
+ <code class="variable-quote">'</code><code class="variable-string">.TemporaryItems</code><code class="variable-quote">'</code><code class="variable-op">,</code>
+ <code class="variable-quote">'</code><code class="variable-string">Desktop DF</code><code class="variable-quote">'</code><code class="variable-op">,</code>
+<code class="variable-ellipsis">...</code>
+</pre></td></tr></table>
+</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="__all__"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <h3 class="epydoc">__all__</h3>
+  
+  <dl class="fields">
+  </dl>
+  <dl class="fields">
+    <dt>Value:</dt>
+      <dd><table><tr><td><pre class="variable">
+<code class="variable-group">[</code><code class="variable-quote">'</code><code class="variable-string">setfileexcludes</code><code class="variable-quote">'</code><code class="variable-op">,</code>
+ <code class="variable-quote">'</code><code class="variable-string">setincludepattern</code><code class="variable-quote">'</code><code class="variable-op">,</code>
+ <code class="variable-quote">'</code><code class="variable-string">setexcludepattern</code><code class="variable-quote">'</code><code class="variable-op">,</code>
+ <code class="variable-quote">'</code><code class="variable-string">setsplitpattern</code><code class="variable-quote">'</code><code class="variable-op">,</code>
+ <code class="variable-quote">'</code><code class="variable-string">processdir</code><code class="variable-quote">'</code><code class="variable-group">]</code>
+</pre></td></tr></table>
+</dd>
+  </dl>
+</td></tr></table>
+</div>
+<br />
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="checkfileseq-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+      <th class="navbar" width="100%"></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1 on Fri Nov 12 22:39:14 2010
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>
