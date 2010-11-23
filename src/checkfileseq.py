@@ -26,7 +26,7 @@ It defines one class L{FileSequenceChecker} which does all the processing.
              See the License for the specific language governing permissions and
              limitations under the License.
 
-@date:       2010-11-06
+@deffield    updated: Updated
 '''
 
 import sys
@@ -38,27 +38,15 @@ from argparse import ArgumentParser
 from argparse import RawDescriptionHelpFormatter
 from operator import itemgetter
 
+__all__ = ['FileSequenceChecker', 'CLIError']
+__version__ = 0.2
+__date__ = '2010-11-06'
+__updated__ = '2010-11-23'
 __docformat__ = "epytext"
 
 DEBUG = 0
 TESTRUN = 1
 PROFILE = 0
-
-#{ CLI Information
-PROGRAM_NAME = "checkfileseq"
-PROGRAM_VERSION = "v0.2"
-PROGRAM_BUILD_DATE = "2010-11-06"
-PROGRAM_VERSION_MESSAGE = '%%(prog)s %s (%s)' % (PROGRAM_VERSION, PROGRAM_BUILD_DATE)
-PROGRAM_SHORTDESC = '''checkfileseq -- scan directories for file sequences with missing files.'''
-PROGRAM_LICENSE = u'''%s
-
-Created by André Berg on %s.
-Copyright 2010 Berg Media. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-http://www.apache.org/licenses/LICENSE-2.0
-''' % (PROGRAM_SHORTDESC, PROGRAM_BUILD_DATE)
-#}
 
 class CLIError(Exception):
     ''' Generic CLI exception. Raised for logging different fatal errors. '''
@@ -446,7 +434,7 @@ class FileSequenceChecker(object):
             return numprocessed
         else:
             return None
-    def setfileexcludes(self, filenames):
+    def setfileexcludes(self, filenames, extend=True):
         '''
         Set a list of file names to be excluded from being 
         evaluated.
@@ -455,9 +443,15 @@ class FileSequenceChecker(object):
         on a Mac or C{Thumbs.db} on a Windows PC for example.
         
         @param filenames: a list of file names
-        @type filenames: list
+        @type filenames: C{list}
+        @param extend: should the default list be extended 
+                       or replaced?
+        @type extend: C{bool}
         '''
-        self.fileexcludes = filenames
+        if extend: 
+            self.fileexcludes.extend(filenames)
+        else:
+            self.fileexcludes = filenames
     def setexcludepattern(self, pattern):
         '''
         Paths matching this pattern will be excluded from being evaluated,
@@ -465,7 +459,7 @@ class FileSequenceChecker(object):
         
         @note: excluding has precedence over including.
         @param pattern: a regex pattern
-        @type pattern: regex
+        @type pattern: C{regex}
         '''
         self.excludepat = pattern
     def setincludepattern(self, pattern):
@@ -998,9 +992,23 @@ def main(argv=None):  # IGNORE:C0111
         argv = sys.argv
     else:
         sys.argv.extend(argv)
+        
+    program_name = "checkfileseq" # IGNORE:W0612 @UnusedVariable
+    program_version = "v%s" % __version__
+    program_build_date = str(__updated__)
+    program_version_message = '%%(prog)s %s (%s)' % (program_version, program_build_date)
+    program_shortdesc = '''checkfileseq -- scan directories for file sequences with missing files.'''
+    program_license = u'''%s
+
+Created by André Berg on %s.
+Copyright 2010 Berg Media. All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+http://www.apache.org/licenses/LICENSE-2.0
+''' % (program_shortdesc, program_build_date)
     try:
         # Setup option parser
-        parser = ArgumentParser(description=PROGRAM_LICENSE, formatter_class=RawDescriptionHelpFormatter)
+        parser = ArgumentParser(description=program_license, formatter_class=RawDescriptionHelpFormatter)
         parser.add_argument("-p", "--pattern", dest="splitpat", help="regex pattern used for splitting a filename into a name part and a sequence number part. Must contain two named groups: 'filename' and 'seqnum'. Can optionally contain a 'filename2' group for cases where the filename is split in half by the sequence number. Note: You should only need to override the defaults for special cases.", metavar="RE")
         parser.add_argument("-m", "--template", dest="template", help="format string with dict-based replacement tokens (e.g. '%%s(<key_name>)s') that correspond to the named groups given in the custom splitpat. Important: this argument is mandatatory if a custom split pattern is specified.", metavar="STR")
         parser.add_argument("-r", "--recursive", dest="recurse", action="store_true", help="recurse into subfolders [default: %(default)s]")
@@ -1009,7 +1017,7 @@ def main(argv=None):  # IGNORE:C0111
         parser.add_argument("-t", "--to", dest="rangeend", help="only process files with sequence number less than or equal to NUM [default: %(default)s]", metavar="NUM")
         parser.add_argument("-i", "--include", dest="include", help="only include paths matching this regex pattern. Note: exclude is given preference over include. [default: %(default)s]", metavar="RE" )
         parser.add_argument("-e", "--exclude", dest="exclude", help="exclude paths matching this regex pattern. [default: %(default)s]", metavar="RE" )
-        parser.add_argument('-V', '--version', action='version', version=PROGRAM_VERSION_MESSAGE)
+        parser.add_argument('-V', '--version', action='version', version=program_version_message)
         parser.add_argument('-s', '--strict', dest="strict", help="use re.match instead of re.search to match and split filenames exactly [default: %(default)s]", action="store_true")
         parser.add_argument(dest="paths", help="paths to folder(s) with file sequence(s) [default: %(default)s]", metavar="path", nargs='+')
         
@@ -1136,14 +1144,13 @@ if __name__ == "__main__":
         #sys.argv.append("/Users/andre/test/sort/dir6")
         #sys.argv.append("/Users/andre/nreal")
     if PROFILE:
-        profile_filename = 'checkfileseq_profile.txt'
         import cProfile
         import pstats
+        profile_filename = 'checkfileseq_profile.txt'
         cProfile.run('main(["-r", datadir])', profile_filename)
         statsfile = open("profile_stats.txt", "wb")
         p = pstats.Stats(profile_filename, stream=statsfile)
         stats = p.strip_dirs().sort_stats('cumulative')
-        stats.print_stats()
         print >> statsfile, stats.print_stats()
         statsfile.close()
         sys.exit(0)
