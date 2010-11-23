@@ -87,22 +87,23 @@ class FileSequenceChecker(object):
                4. order (C{order}),
                5. file name, 2nd part (optional) (C{filename2})
                
-           The order (C{'normal'} or C{'reverse'}) specifies which comes first: 
-           file name or sequence number.
+           The order (C{normal} or C{reverse}) specifies which comes first: 
+           file name or sequence number. To explain why this is needed, let's
+           first look at the final (optional) part:
            
-           A fifth key C{filename2} may exist which contains the second filename 
-           part. If present this part will be re-inserted again (appropriate to
-           the order) when constructing the missing file names as part of creating
-           a missing files series.  
+           A fifth key, C{filename2}, may exist which contains the second file 
+           name part. This part will be re-inserted again (placed according to
+           the correct order) when constructing the missing file names as part 
+           of creating the lists of missing files.
            
-           The order must be stored explicitly to be able to print missing 
-           file names in a way directly relating to the first file in the 
-           sequence. 
+           The order must be stored explicitly to be able to construct missing 
+           file names in a way directly relating to the part order found in the 
+           first file of a sequence. 
            
-           It is also worth noting that L{self.start} and L{self.end} do B{NOT} play 
-           an important role here. The constraining to files within a particular 
-           start and end interval is utilized and verified later within the 
-           comparing function.
+           It may also be worth noting that L{self.start} and L{self.end} do 
+           B{NOT} play an important role here. The constraining to files within 
+           a particular start and end interval is utilized and verified later 
+           within the comparing function.
            
         2. Iterate over the prepared directory contents and from each file name list
            pass dicts representing current file name parts and next file name parts 
@@ -146,7 +147,7 @@ class FileSequenceChecker(object):
     
     In the case of the CLI that L{FileSequenceChecker} was originally made for, 
     command line arguments give the end user the ability to define a pattern and 
-    a replacement template themselves, so as to cater to these special cases. 
+    a replacement template themselves, so as to cover these special cases. 
 
     Example Use
     -----------
@@ -221,14 +222,27 @@ class FileSequenceChecker(object):
     of all missing file names in the same way as done currently in the 
     comparing function.
     
-    While this approach has some elegance to it, from a I{GTD} perspective 
-    of creating a command line tool for a specific purpose, the I{'divide et impera'} 
-    approach was abandoned in favour of a I{one-class-fits-all} design. 
+    While this approach has some elegance to it, from a I{getting-things-done} 
+    perspective of creating a command line tool for a very specific purpose, 
+    the I{'divide et impera'} approach was abandoned in favour of a 
+    I{one-class-fits-all} design. 
     
     This was also helped by the fact that it became apparent pretty early 
     that there would not be much need for things like slice notation and 
     most internal micro problems could be handled by utilizing standard 
-    Python types.    
+    Python types.
+    
+    @ivar start: only process files with sequence number values greater 
+                 than this number
+    @type start: C{int}
+    @ivar end: only process files with sequence number values less than 
+               or equal to this number 
+    @type end: C{int}
+    @ivar recursive: process sub directories
+    @type recursive: C{bool}
+    @ivar fullpaths: index missing file lists by absolute paths instead 
+                     of relative paths
+    @type fullpaths: C{bool}
     '''
 
     SPLITPAT = [ #: default split patterns
@@ -300,7 +314,7 @@ class FileSequenceChecker(object):
     ]
     
     def __init__(self, start=None, end=None, recursive=False, fullpaths=False):
-        
+        super(FileSequenceChecker, self).__init__()
         if isinstance(start, basestring):
             try:
                 start = int(start.strip(), 10)
@@ -929,8 +943,7 @@ class FileSequenceChecker(object):
             self.reset()
         return True
     def processdir(self, inpath, strict=False, verbose=0):
-        '''
-        Main entry method: process the contents of a directory.
+        ''' Main entry method: process the contents of a directory.
         
         @param inpath: the file path to a directory to process.
         @type inpath: C{unicode}
@@ -938,13 +951,13 @@ class FileSequenceChecker(object):
         @type strict: C{bool}
         @param verbose: print informational messages.
         @type verbose: C{int}
-        @return: dictionary with missing files. Contains as keys
+        @return: dictionary with missing files. Contains as keys,
                  paths to directories with missing files. 
                  Each path key contains as its value a list of 
                  missing unicode file names. If there are no
                  missing files, returns an empty dictionary.
         @rtype: C{dict}
-        @raise ValueError: if the directory at inpath doesn't 
+        @raise ValueError: if the directory at C{inpath} doesn't 
                            exist.
         '''
         self.lastexectime = -1
@@ -1117,13 +1130,13 @@ USAGE
                 plurality = "s"
             print ""
             print "Processed %i file%s in %0.4f s" % (fsc.totalprocessed, plurality, exectime)
+        return 0
     except Exception, e:
         if DEBUG or False:
             raise(e)
         print >> sys.stderr, sys.argv[0].split(u"/")[-1] + u": " + unicode(e)
         print >> sys.stderr, "\t for help use --help"
         return 2
-
 
 if __name__ == "__main__":
     if DEBUG or TESTRUN or PROFILE:
@@ -1139,10 +1152,11 @@ if __name__ == "__main__":
         sys.setdefaultencoding('ascii') # IGNORE:E1101 #@UndefinedVariable
         #sys.argv.append("-h")
         #sys.argv.append("-v")
-        sys.argv.append("-r")
+        #sys.argv.append("-V")
         #sys.argv.append("--from=0")
         #sys.argv.append("--to=10")
         #sys.argv.append("-s")
+        sys.argv.append("-r")
         #sys.argv.append("--pattern='^(?!\d)(?P<filename>.+?)(?P<seqnum>\d+)$'")
         #sys.argv.append("--template='%(seqnum)s%(filename)s'")
         #sys.argv.append("unittests/data/reverse_order")
@@ -1160,7 +1174,5 @@ if __name__ == "__main__":
         print >> statsfile, stats.print_stats()
         statsfile.close()
         sys.exit(0)
-    try:
-        sys.exit(main())
-    except KeyboardInterrupt:
-        sys.exit(0)
+    sys.exit(main())
+    

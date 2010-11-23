@@ -1,10 +1,12 @@
 # encoding: utf-8
 # pylint: disable=C0103
 '''
-Created on 01.11.2010
+checkfileseq_tests.py
 
-@author: andre
+Created by André Berg on 2010-11-01.
+Copyright (c) 2010 Berg Media. All rights reserved.
 '''
+
 import unittest
 import sys
 
