@@ -27,7 +27,8 @@ DIRS = {
     'mixed': u'data/mixed_order',
     'normal': u'data/normal_order',
     'reverse': u'data/reverse_order',
-    'nothing': u'data/nothing_missing'
+    'nothing': u'data/nothing_missing',
+    'fileexcludes': u'data/fileexcludes'
 }
 
 class TestFileSequenceCheckerGeneral(unittest.TestCase):
@@ -38,40 +39,105 @@ class TestFileSequenceCheckerGeneral(unittest.TestCase):
         self.assertEquals(sys.getdefaultencoding(), 'ascii', 'to properly test unicode handling in filepaths we need default encoding to be ascii')
 
 class TestFileSequenceCheckerFileExcludePattern(unittest.TestCase):
-    # TODO: implement TestFileSequenceCheckerFileExcludePattern
-    pass
+    ''' text cases for the file excludes list used (internally) in preparedircontents(). '''
 
     def setUp(self):
-        # TODO: setup attributes like within TestFileSequenceCheckerSplitPattern
-        pass
+        self.fsc = FileSequenceChecker()
+        self.result = {
+            DIRS['fileexcludes']: 
+            [{
+                'fileext': u'.png',
+                'filename': u'Name20.',
+                'filename2': u'',
+                'order': 'normal',
+                'seqnum': u'01'
+            }, 
+            {
+                'fileext': u'.png',
+                'filename': u'Name20.',
+                'filename2': u'',
+                'order': 'normal',
+                'seqnum': u'06'
+            }]
+        }
     
-    def testFileExcludePatternMatches(self, params):
-        # TODO: implement testFileExcludePatternMatches
-        pass
-
+    def testFileExcludes(self):
+        ''' test if fileexcludes are excluded from the prepared dir contents. '''
+        self.fsc.setfileexcludes(['ExcludeMe']) # extends self.fsc.fileexcludes
+        self.fsc.preparedircontents(DIRS['fileexcludes'])
+        self.assertEqual(self.fsc.dircontents, self.result)
+        
 class TestFileSequenceCheckerExcludePattern(unittest.TestCase):
-    # TODO: implement TestFileSequenceCheckerExcludePattern
-    pass
-
-    def setUp(self):
-        # TODO: setup attributes like within TestFileSequenceCheckerSplitPattern
-        pass
+    ''' test cases for the exclude pattern facility. '''
     
-    def testExcludePatternMatches(self, params):
-        # TODO: implement testExcludePatternMatches
-        pass
+    def setUp(self):
+        self.fsc = FileSequenceChecker()
+        self.result = {
+            DIRS['reverse']: 
+            [{
+              'fileext': u'.png', 
+              'seqnum': u'12', 
+              'order': 'reverse', 
+              'filename2': u'v', 
+              'filename': u'_Write'
+            }, {
+              'fileext': u'.png', 
+              'seqnum': u'15', 
+              'order': 'reverse', 
+              'filename2': u'v', 
+              'filename': u'_Write'
+            }]
+        }
+        
+    def testExcludePatternMatches(self):
+        ''' test setexcludepattern() '''
+        self.fsc.setexcludepattern(ur'Write30')
+        self.fsc.preparedircontents(DIRS['reverse'])
+        self.assertEqual(self.fsc.dircontents, self.result)
+        # now set exclude pattern to something else 
+        # and ensure we do not match our expected result
+        self.fsc.setexcludepattern(ur'Write60')
+        self.fsc.preparedircontents(DIRS['reverse'])
+        self.assertNotEqual(self.fsc.dircontents, self.result)
 
 class TestFileSequenceCheckerIncludePattern(unittest.TestCase):
-    # TODO: implement TestFileSequenceCheckerIncludePattern
-    pass
+    ''' test cases for the include pattern facility '''
 
     def setUp(self):
-        # TODO: setup attributes like within TestFileSequenceCheckerSplitPattern
-        pass
+        self.fsc = FileSequenceChecker()
+        self.result = {
+            DIRS['normal']:
+            [{
+              'fileext': u'.bmp', 
+              'seqnum': u'002', 
+              'order': 'normal', 
+              'filename2': u'', 
+              'filename': u'line.'
+            }, {
+              'fileext': u'.bmp', 
+              'seqnum': u'003', 
+              'order': 'normal', 
+              'filename2': u'', 
+              'filename': u'line.'
+            }, {
+              'fileext': u'.bmp', 
+              'seqnum': u'010', 
+              'order': 'normal', 
+              'filename2': u'', 
+              'filename': u'line.'
+            }]
+        }
     
-    def testIncludePatternMatches(self, params):
-        # TODO: implement testIncludePatternMatches
-        pass
+    def testIncludePatternMatches(self):
+        ''' test setincludepattern() '''
+        self.fsc.setincludepattern(ur'line')
+        self.fsc.preparedircontents(DIRS['normal'])
+        self.assertEqual(self.fsc.dircontents, self.result)
+        # now set include pattern to something else 
+        # and ensure we do not match our expected result
+        self.fsc.setincludepattern(ur'x')
+        self.fsc.preparedircontents(DIRS['normal'])
+        self.assertNotEqual(self.fsc.dircontents, self.result)      
 
 
 class TestFileSequenceCheckerSplitPattern(unittest.TestCase):
