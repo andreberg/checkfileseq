@@ -45,8 +45,8 @@ __updated__ = '2010-11-23'
 __docformat__ = "epytext"
 
 DEBUG = 0
-TESTRUN = 1
-PROFILE = 0
+TESTRUN = 0
+PROFILE = 0 or (os.environ.has_key('BMProfileLevel') and os.environ['BMProfileLevel'] > 0)
 
 class CLIError(Exception):
     ''' Generic CLI exception. Raised for logging different fatal errors. '''
