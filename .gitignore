@@ -52,10 +52,16 @@ backup/
 # Python Stuff
 *.pyc
 
+# Python Coverage
+
+htmlcov/
+.coverage
+
+# Epydoc
+
+doc/
+
 # Project specific
 
-# File Sequence Checker
-src/File Sequence Checker/sandbox.py
-src/File Sequence Checker/doc/
-src/File Sequence Checker/checkfileseq_profile*
-src/File Sequence Checker/profile_stats*
+*_profile.txt
+profile_stats.txt
