@@ -1000,12 +1000,18 @@ def main(argv=None):  # IGNORE:C0111
     program_shortdesc = '''checkfileseq -- scan directories for file sequences with missing files.'''
     program_license = u'''%s
 
-Created by André Berg on %s.
-Copyright 2010 Berg Media. All rights reserved.
+    Created by André Berg on %s.
+    Copyright 2010 Berg Media. All rights reserved.
+    
+    Licensed under the Apache License 2.0
+    http://www.apache.org/licenses/LICENSE-2.0
+    
+    Distributed on an "AS IS" basis without warranties
+    or conditions of any kind, either express or implied.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-http://www.apache.org/licenses/LICENSE-2.0
-''' % (program_shortdesc, program_build_date)
+USAGE
+''' % (program_shortdesc, str(__date__))
+
     try:
         # Setup option parser
         parser = ArgumentParser(description=program_license, formatter_class=RawDescriptionHelpFormatter)
