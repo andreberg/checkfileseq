@@ -295,7 +295,9 @@ div.fields {
 div.fields p {
     margin-bottom: 0.5em;
 }
-
+div center {
+	display: block;
+}
 /* Index tables (identifier index, term index, etc)
 * - link-index is used for indices containing lists of links
 * (namely, the identifier index & term index).
@@ -770,15 +772,33 @@ body > p {
 body > ol, body > ul {
 	margin: 3em;
 }
+/* tox heading blocks need some margin ... */
 h2.toc {
 	display: block;
 	margin-top: 10px;
 }
-h2.toc:nth-child(3) { /* All Classes */
+/* ... but keep the first heading blocks of
+   each subsection rooted at their place */ 
+h2.toc:nth-child(3) {
+	/* All Classes */
 	display: block;
 	margin-top: 0px;
 }
-h2.toc:nth-child(5) { /* Modules */
+h2.toc:nth-child(5) {
+	/* Modules */
 	display: block;
 	margin-top: 0px;
+}
+/* we don't want bullet points
+   in the popup messages for 
+   source ambiguity resolution
+   questions */
+tt ul {
+	list-style: none;
+}
+/* make the parameters stand out */
+li strong code {
+	font-weight: bolder;
+	font-family: sans-serif;
+	font-style: italic;
 }
