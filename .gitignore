@@ -61,6 +61,12 @@ htmlcov
 
 doc
 
+# Sphinx
+
+_build
+_templates
+_static
+
 # Project specific
 
 *_profile.txt
