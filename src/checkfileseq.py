@@ -41,7 +41,7 @@ from operator import itemgetter
 __all__ = ['FileSequenceChecker', 'CLIError']
 __version__ = 0.2
 __date__ = '2010-11-06'
-__updated__ = '2010-11-23'
+__updated__ = '2010-12-01'
 __docformat__ = "epytext"
 
 DEBUG = 0
@@ -860,7 +860,7 @@ class FileSequenceChecker(object):
             print "seqnum = %s" % seqnum
             print "iseqnum = %i" % iseqnum
             print "order = %s" % order
-            print "nextfilenameparts = %s" % nextfilenameparts
+            print "nextfilenameparts = %s" % nextfilenameparts                 
         if self.lastfilebarename == '':
             # lastfilebarename is empty, which means we are at the beginning 
             # of a new file sequence. Increment iseqnum into nextseqnum and 
@@ -1006,7 +1006,6 @@ def main(argv=None):  # IGNORE:C0111
     else:
         sys.argv.extend(argv)
         
-    program_name = "checkfileseq" # IGNORE:W0612 @UnusedVariable
     program_version = "v%s" % __version__
     program_build_date = str(__updated__)
     program_version_message = '%%(prog)s %s (%s)' % (program_version, program_build_date)
@@ -1139,8 +1138,7 @@ USAGE
         return 2
 
 if __name__ == "__main__":
-    if DEBUG or TESTRUN or PROFILE:
-        datadir = "unittests/data"
+    datadir = "unittests/data"    
     if DEBUG:
         sys.argv.append("-v")
         sys.argv.append("-r")
@@ -1161,8 +1159,6 @@ if __name__ == "__main__":
         #sys.argv.append("--template='%(seqnum)s%(filename)s'")
         #sys.argv.append("unittests/data/reverse_order")
         sys.argv.append(datadir)
-        #sys.argv.append("/Users/andre/test/sort/dir6")
-        #sys.argv.append("/Users/andre/nreal")
     if PROFILE:
         import cProfile
         import pstats
