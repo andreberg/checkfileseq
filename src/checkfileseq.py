@@ -1162,7 +1162,7 @@ if __name__ == "__main__":
     if PROFILE:
         import cProfile
         import pstats
-        profile_filename = 'checkfileseq_profile.txt'
+        profile_filename = 'checkfileseq_profile.out'
         cProfile.run('main(["-r", datadir])', profile_filename)
         statsfile = open("profile_stats.txt", "wb")
         p = pstats.Stats(profile_filename, stream=statsfile)
