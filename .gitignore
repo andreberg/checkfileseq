@@ -59,7 +59,7 @@ htmlcov
 
 # Epydoc
 
-doc
+html
 
 # Sphinx
 
@@ -69,5 +69,5 @@ _static
 
 # Project specific
 
-*_profile.txt
+*_profile.out
 profile_stats.txt
