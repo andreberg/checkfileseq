@@ -732,6 +732,9 @@ h1.toc {
 	line-height: 0;
 	font-size: 100%;
 }
+tr span.options {
+	margin-right: 10px;
+}
 tr .options {
 	top: 20px;
 	position: relative;
@@ -740,6 +743,7 @@ tr .options {
 td[valign=top] span {
 	/*display: block;*/
 	margin-top: -11px;
+	margin-right: 0;
 	vertical-align: bottom;
 }
 hr, br {
