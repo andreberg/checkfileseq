@@ -6,7 +6,77 @@ checkfileseq is a command line tool for scanning directories that contain
 file sequences (e.g. @file.001.png, image.002.png, ... image.NNN.png@ , etc.)
 and determine if each file sequence present is complete. 
 
-It defines one class @FileSequenceChecker@  which does all the processing.
+It defines one class @FileSequenceChecker@ which does all the processing.
+
+h2. Requirements
+
+"Python 2.7":http://www.python.org
+
+h2. Python 3 Compatibility
+
+Not quite there yet, but once the "argparse":http://docs.python.org/library/argparse.html module is added to the 
+Python 3.2 stdlib it shouldn't be too hard to convert the rest of the module.
+In fact I estimate just extracting the @FileSequenceChecker@ class and running that 
+through @2to3@ should be possible right now.
+
+h2. Documentation
+
+You can view the generated documentation "online":http://www.bergmedia.de/remote/github/checkfileseq/docs/index.html.
+
+h2. Sample Output
+
+bc.. In unittests/data/normal_order:
+  Missing André-009.png
+  Missing André-010.png
+  Missing André-002 03.png
+  Missing André-002 18.png
+  Missing André-002 19.png
+  Missing Version 1.0 - Write Icon 01.r6.png
+  Missing Version 1.0 - Write Icon 01.r7.png
+  Missing Write30 6.png
+  Missing Write30 8.png
+  Missing Write30 9.png
+  Missing Write30 10.png
+  Missing line.009.bmp
+  Missing résumé.v01.20.png
+  Missing résumé.v01.21.png
+In unittests/data/fileexcludes:
+  Missing Name20.02.png
+  Missing Name20.03.png
+  Missing Name20.04.png
+  Missing Name20.05.png
+In unittests/data/reverse_order:
+  Missing 2 Write30.png
+  Missing 4 Write30.png
+  Missing 5 Write30.png
+  Missing v13_Write.png
+  Missing v14_Write.png
+  Missing r101_Write30.png
+  Missing r102_Write30.png
+  Missing r103_Write30.png
+In unittests/data/mixed_order:
+  Missing 2 Write30.png
+  Missing 4 Write30.png
+  Missing 5 Write30.png
+  Missing -N0name002-png
+  Missing -N0name003-png
+  Missing André-010.png
+  Missing André-013.png
+  Missing André-014.png
+  Missing André-002 17.png
+  Missing André-002 18.png
+  Missing André-002 19.png
+  Missing Name20.02.png
+  Missing Name20.04.png
+  Missing Name20.05.png
+  Missing Write30 6.png
+  Missing Write30 9.png
+  Missing Write30 10.png
+ 
+-------------
+Total missing: 43 files in 4 dirs
+
+Processed 172 files in 0.0075 s
 
 h2. Copyright
 
