@@ -1168,16 +1168,7 @@ if __name__ == "__main__":
         doctest.testmod()
         reload(sys)
         sys.setdefaultencoding('ascii') # IGNORE:E1101 #@UndefinedVariable
-        #sys.argv.append("-h")
-        #sys.argv.append("-v")
-        #sys.argv.append("-V")
-        #sys.argv.append("--from=0")
-        #sys.argv.append("--to=10")
-        #sys.argv.append("-s")
         sys.argv.append("-r")
-        #sys.argv.append("--pattern='^(?!\d)(?P<filename>.+?)(?P<seqnum>\d+)$'")
-        #sys.argv.append("--template='%(seqnum)s%(filename)s'")
-        #sys.argv.append("unittests/data/reverse_order")
         sys.argv.append(datadir)
     if PROFILE:
         import cProfile
