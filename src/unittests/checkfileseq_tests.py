@@ -1,5 +1,5 @@
 # encoding: utf-8
-# pylint: disable=C0103
+# pylint: disable=C0103,W0212
 '''
 checkfileseq_tests.py
 
@@ -66,8 +66,8 @@ class TestFileSequenceCheckerFileExcludePattern(unittest.TestCase):
     def testFileExcludes(self):
         ''' test if fileexcludes are excluded from the prepared dir contents. '''
         self.fsc.setfileexcludes(['ExcludeMe']) # extends self.fsc.fileexcludes
-        self.fsc.preparedircontents(DIRS['fileexcludes'])
-        self.assertEqual(self.fsc.dircontents, self.result)
+        self.fsc._prepare_dir_contents(DIRS['fileexcludes'])
+        self.assertEqual(self.fsc._dircontents, self.result)
         
 class TestFileSequenceCheckerExcludePattern(unittest.TestCase):
     ''' test cases for the exclude pattern facility. '''
@@ -94,13 +94,13 @@ class TestFileSequenceCheckerExcludePattern(unittest.TestCase):
     def testExcludePatternMatches(self):
         ''' test setexcludepattern() '''
         self.fsc.setexcludepattern(ur'Write30')
-        self.fsc.preparedircontents(DIRS['reverse'])
-        self.assertEqual(self.fsc.dircontents, self.result)
+        self.fsc._prepare_dir_contents(DIRS['reverse'])
+        self.assertEqual(self.fsc._dircontents, self.result)
         # now set exclude pattern to something else 
         # and ensure we do not match our expected result
         self.fsc.setexcludepattern(ur'Write60')
-        self.fsc.preparedircontents(DIRS['reverse'])
-        self.assertNotEqual(self.fsc.dircontents, self.result)
+        self.fsc._prepare_dir_contents(DIRS['reverse'])
+        self.assertNotEqual(self.fsc._dircontents, self.result)
 
 class TestFileSequenceCheckerIncludePattern(unittest.TestCase):
     ''' test cases for the include pattern facility '''
@@ -133,13 +133,13 @@ class TestFileSequenceCheckerIncludePattern(unittest.TestCase):
     def testIncludePatternMatches(self):
         ''' test setincludepattern() '''
         self.fsc.setincludepattern(ur'line')
-        self.fsc.preparedircontents(DIRS['normal'])
-        self.assertEqual(self.fsc.dircontents, self.result)
+        self.fsc._prepare_dir_contents(DIRS['normal'])
+        self.assertEqual(self.fsc._dircontents, self.result)
         # now set include pattern to something else 
         # and ensure we do not match our expected result
         self.fsc.setincludepattern(ur'x')
-        self.fsc.preparedircontents(DIRS['normal'])
-        self.assertNotEqual(self.fsc.dircontents, self.result)      
+        self.fsc._prepare_dir_contents(DIRS['normal'])
+        self.assertNotEqual(self.fsc._dircontents, self.result)      
 
 
 class TestFileSequenceCheckerSplitPattern(unittest.TestCase):
@@ -176,16 +176,16 @@ class TestFileSequenceCheckerSplitPattern(unittest.TestCase):
     def testSetsplitpatternWithNormalInput(self): #IGNORE:C0103
         ''' test changing the split pattern after creation with non-bogus input '''
         self.fsc1.setsplitpattern(self.spat1, self.spat1template)
-        self.assertEquals(self.fsc1.splitpat, self.spat1)
+        self.assertEquals(self.fsc1._splitpat, self.spat1)
         self.fsc2.setsplitpattern(self.spat2, self.spat2template)
-        self.assertEqual(self.fsc2.splitpat, self.spat2)
+        self.assertEqual(self.fsc2._splitpat, self.spat2)
         
     def testReset(self):
         ''' test passing None to setsplitpat in order to reset its to the default state'''
         fsc = FileSequenceChecker()
         fsc.setsplitpattern(self.spat1, self.spat1template)
         fsc.setsplitpattern(None)
-        self.assertEqual(fsc.SPLITPAT, fsc.splitpat, 'fsc.splitpat should be reset to FileSequenceChecker.SPLITPAT when fsc.setsplitpattern is called with None as arg')
+        self.assertEqual(fsc.SPLITPAT, fsc._splitpat, 'fsc.splitpat should be reset to FileSequenceChecker.SPLITPAT when fsc.setsplitpattern is called with None as arg')
         
     def testSetsplitpatternWithWrongInput(self): #IGNORE:C0103
         ''' test changing the split pattern after creation with non-bogus but wrong input '''
